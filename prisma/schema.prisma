@@ -1,0 +1,163 @@
+// BuildSmart AI Pro — Prisma schema (PostgreSQL Production)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id         String    @id @default(cuid())
+  email      String    @unique
+  name       String?
+  password   String
+  role       String    @default("USER") // 'ADMIN' or 'USER'
+  isApproved Boolean   @default(false)  // Admin must toggle this to true
+  createdBy  String?   // Tracks which admin approved/provisioned this user
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  projects      Project[]
+  notifications Notification[]
+}
+
+model AdminSetting {
+  id                  String   @id @default(cuid())
+  isSiteLocked        Boolean  @default(false) // If true, non-admin access is restricted
+  baseRatePerSqFt     Float    @default(1700)
+  standardRatePerSqFt Float    @default(1700)
+  premiumRatePerSqFt  Float    @default(2200)
+  luxuryRatePerSqFt   Float    @default(3100)
+  cementBagRate       Float    @default(380)
+  steelKgRate         Float    @default(65)
+  sandCftRate         Float    @default(55)
+  aggregateCftRate    Float    @default(42)
+  brickRate           Float    @default(9)
+  masonDailyWage      Float    @default(950)
+  helperDailyWage     Float    @default(550)
+  updatedAt           DateTime @updatedAt
+}
+
+model Project {
+  id              String        @id @default(cuid())
+  userId          String
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name            String
+  location        String
+  latitude        Float?
+  longitude       Float?
+  builtUpAreaSqFt Float         @default(0)
+  budget          Float         @default(0)
+  startDate       DateTime
+  endDate         DateTime
+  status          String        @default("PLANNING")
+  progressPercent Float         @default(0)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  estimate      Estimate?
+  expenses      Expense[]
+  tasks         Task[]
+  sitePhotos    SitePhoto[]
+  changeLogs    ChangeLog[]
+  notifications Notification[]
+}
+
+model Estimate {
+  id                 String   @id @default(cuid())
+  projectId          String   @unique
+  project            Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  cementBags         Float    @default(0)
+  steelKg            Float    @default(0)
+  sandCft            Float    @default(0)
+  bricksCount        Float    @default(0)
+  aggregateCft       Float    @default(0)
+
+  masonCount         Int      @default(0)
+  electricianCount   Int      @default(0)
+  plumberCount       Int      @default(0)
+  helperCount        Int      @default(0)
+  totalManHours      Float    @default(0)
+
+  equipmentCost      Float    @default(0)
+  materialCost       Float    @default(0)
+  labourCost         Float    @default(0)
+  overheadCost       Float    @default(0)
+  totalEstimatedCost Float    @default(0)
+  costPerSqFt        Float    @default(0)
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model Expense {
+  id         String   @id @default(cuid())
+  projectId  String
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  category   String   @default("MATERIAL")
+  itemName   String
+  amount     Float
+  date       DateTime
+  receiptUrl String?
+  createdAt  DateTime @default(now())
+}
+
+model Task {
+  id              String   @id @default(cuid())
+  projectId       String
+  project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  phaseName       String
+  title           String
+  assignee        String?
+  dueDate         DateTime
+  isCompleted     Boolean  @default(false)
+  progressPercent Float    @default(0)
+  createdAt       DateTime @default(now())
+}
+
+model SitePhoto {
+  id         String   @id @default(cuid())
+  projectId  String
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  imageUrl   String
+  caption    String?
+  latitude   Float?
+  longitude  Float?
+  uploadedAt DateTime @default(now())
+}
+
+model MaterialRate {
+  id           String   @id @default(cuid())
+  materialName String   @unique
+  unit         String
+  unitPrice    Float
+  updatedAt    DateTime @updatedAt
+}
+
+model ChangeLog {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  field     String
+  oldValue  String?
+  newValue  String?
+  changedBy String
+  createdAt DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  type      String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}

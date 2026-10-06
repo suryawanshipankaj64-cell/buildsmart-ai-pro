@@ -1,0 +1,57 @@
+{
+  "expo": {
+    "name": "BuildSmart AI-Pro Mobile",
+    "slug": "buildsmart-aipro-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "backgroundColor": "#071224",
+      "resizeMode": "contain"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.buildsmart.aipro.mobile"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#071224"
+      },
+      "package": "com.buildsmart.aipro.mobile",
+      "permissions": [
+        "CAMERA",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow BuildSmart AI-Pro to capture on-site proof-of-work inspection photos."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow BuildSmart AI-Pro to geotag site inspections and telemetry."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow BuildSmart AI-Pro to access drawings and site inspection photos."
+        }
+      ],
+      [
+        "expo-document-picker",
+        {}
+      ],
+      [
+        "expo-secure-store"
+      ]
+    ]
+  }
+}
