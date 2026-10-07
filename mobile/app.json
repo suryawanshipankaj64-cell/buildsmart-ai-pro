@@ -5,13 +5,15 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
+    "icon": "./assets/icon.png",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.buildsmart.aipro.mobile"
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#071224"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FFFFFF"
       },
       "package": "com.buildsmart.aipro.mobile",
       "permissions": [
