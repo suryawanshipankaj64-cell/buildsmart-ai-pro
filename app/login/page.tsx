@@ -1,17 +1,23 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { signIn } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { HardHat, Lock, Mail, AlertCircle, Loader2 } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { ShieldCheck, Lock, Mail, AlertCircle, Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get('error') === 'admin_only') {
+      setError('Access Restricted: The web console is reserved for Executive Administrators only. Engineers and Clients should use the mobile app.');
+    }
+  }, [searchParams]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -20,69 +26,91 @@ export default function LoginPage() {
 
     try {
       const res = await signIn('credentials', {
-        email,
+        email: email.trim().toLowerCase(),
         password,
         redirect: false,
       });
 
       if (res?.error) {
-        setError('Invalid email or password');
+        setError('Invalid administrator email or password.');
+        setLoading(false);
       } else {
+        // Verify that the logged-in user is an ADMIN
+        const sessionRes = await fetch('/api/auth/session');
+        const sessionData = await sessionRes.json();
+        
+        if (sessionData?.user?.role && sessionData.user.role.toUpperCase() !== 'ADMIN') {
+          setError('Access Restricted: Only Administrator accounts can log in to the web console. Please use the mobile app.');
+          await fetch('/api/auth/signout', { method: 'POST' });
+          setLoading(false);
+          return;
+        }
+
         router.push('/dashboard');
         router.refresh();
       }
     } catch (err) {
-      setError('An unexpected error occurred.');
-    } finally {
+      setError('An unexpected error occurred. Please try again.');
       setLoading(false);
     }
   }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-navy-950 px-4">
-      <div className="w-full max-w-md rounded-xl border border-blueprint-line bg-navy-900 p-8 shadow-2xl">
+      <div className="w-full max-w-md rounded-2xl border border-blueprint-line/70 bg-navy-900/90 p-8 shadow-2xl backdrop-blur-sm">
+        {/* Header Branding */}
         <div className="mb-6 flex flex-col items-center text-center">
-          <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-signal-teal/15 text-signal-teal">
-            <HardHat size={28} />
+          <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-signal-teal/15 text-signal-teal shadow-inner border border-signal-teal/30">
+            <ShieldCheck size={32} />
           </div>
-          <h1 className="font-display text-2xl font-bold text-paper">BuildSmart AI</h1>
-          <p className="text-xs text-signal-slate">Sign in to access your construction workspace</p>
+          <h1 className="font-display text-2xl font-extrabold tracking-tight text-paper">
+            BuildSmart AI
+          </h1>
+          <p className="mt-1 text-xs font-mono font-medium text-signal-slate uppercase tracking-wider">
+            Executive Admin Console
+          </p>
         </div>
 
+        {/* Error Alert */}
         {error && (
-          <div className="mb-4 flex items-center gap-2 rounded-lg border border-signal-coral/30 bg-signal-coral/10 p-3 text-xs text-signal-coral">
-            <AlertCircle size={16} />
+          <div className="mb-5 flex items-start gap-2.5 rounded-lg border border-signal-coral/40 bg-signal-coral/10 p-3.5 text-xs text-signal-coral leading-relaxed">
+            <AlertCircle size={16} className="shrink-0 mt-0.5" />
             <span>{error}</span>
           </div>
         )}
 
+        {/* Login Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="mb-1 block text-xs font-medium text-signal-slate">Email Address</label>
+            <label className="mb-1.5 block text-xs font-mono font-medium text-signal-slate uppercase tracking-wider">
+              Admin Email
+            </label>
             <div className="relative">
-              <Mail className="absolute left-3 top-3 text-signal-slate" size={16} />
+              <Mail className="absolute left-3.5 top-3.5 text-signal-slate" size={16} />
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="engineer@buildsmart.com"
-                className="w-full rounded-lg border border-blueprint-line bg-navy-800 py-2.5 pl-10 pr-4 text-sm text-paper focus:border-signal-teal focus:outline-none"
+                placeholder="pankajsuryawanshi7764@gmail.com"
+                className="w-full rounded-lg border border-blueprint-line bg-navy-800/80 py-3 pl-11 pr-4 text-sm text-paper placeholder:text-signal-slate/50 focus:border-signal-teal focus:outline-none transition-colors"
               />
             </div>
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-signal-slate">Password</label>
+            <label className="mb-1.5 block text-xs font-mono font-medium text-signal-slate uppercase tracking-wider">
+              Password
+            </label>
             <div className="relative">
-              <Lock className="absolute left-3 top-3 text-signal-slate" size={16} />
+              <Lock className="absolute left-3.5 top-3.5 text-signal-slate" size={16} />
               <input
                 type="password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full rounded-lg border border-blueprint-line bg-navy-800 py-2.5 pl-10 pr-4 text-sm text-paper focus:border-signal-teal focus:outline-none"
+                className="w-full rounded-lg border border-blueprint-line bg-navy-800/80 py-3 pl-11 pr-4 text-sm text-paper placeholder:text-signal-slate/50 focus:border-signal-teal focus:outline-none transition-colors"
               />
             </div>
           </div>
@@ -90,57 +118,18 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="flex w-full items-center justify-center rounded-lg bg-signal-teal py-2.5 text-sm font-semibold text-navy-950 transition-opacity hover:opacity-90 disabled:opacity-50"
+            className="mt-2 flex w-full items-center justify-center rounded-lg bg-signal-teal py-3 text-sm font-mono font-bold text-navy-950 shadow-md transition-all hover:bg-signal-teal/90 active:scale-[0.99] disabled:opacity-50"
           >
-            {loading ? <Loader2 size={18} className="animate-spin" /> : 'Sign In'}
+            {loading ? (
+              <div className="flex items-center gap-2">
+                <Loader2 size={18} className="animate-spin" />
+                <span>AUTHENTICATING...</span>
+              </div>
+            ) : (
+              'SIGN IN AS ADMIN'
+            )}
           </button>
         </form>
-
-        {/* Quick Fill Demo Profiles */}
-        <div className="mt-6 border-t border-blueprint-line pt-4">
-          <p className="text-[10px] font-mono font-bold tracking-wider text-signal-slate uppercase text-center mb-2.5">
-            Quick Sign-In Profiles
-          </p>
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setEmail('pankajsuryawanshi7764@gmail.com');
-                setPassword('9403496516');
-              }}
-              className="rounded-md border border-signal-teal/40 bg-signal-teal/10 px-2 py-1.5 text-center text-[11px] font-mono font-bold text-signal-teal hover:bg-signal-teal/20 transition-colors"
-            >
-              Exec Admin
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setEmail('engineer@buildsmart.ai');
-                setPassword('engineer123');
-              }}
-              className="rounded-md border border-blueprint-line bg-navy-800 px-2 py-1.5 text-center text-[11px] font-mono text-signal-slate hover:text-paper hover:bg-navy-700 transition-colors"
-            >
-              Site Eng
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setEmail('pm@buildsmart.ai');
-                setPassword('pm123');
-              }}
-              className="rounded-md border border-blueprint-line bg-navy-800 px-2 py-1.5 text-center text-[11px] font-mono text-signal-slate hover:text-paper hover:bg-navy-700 transition-colors"
-            >
-              Senior PM
-            </button>
-          </div>
-        </div>
-
-        <div className="mt-5 text-center text-xs text-signal-slate">
-          Don't have an account?{' '}
-          <Link href="/register" className="text-signal-teal hover:underline">
-            Register site
-          </Link>
-        </div>
       </div>
     </div>
   );
