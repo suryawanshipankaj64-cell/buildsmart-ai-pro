@@ -3,12 +3,13 @@ import useSWR, { mutate } from 'swr';
 import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Camera, Image as ImageIcon, MapPin, Layers } from 'lucide-react';
 import { fetcher, postJson } from '@/lib/fetcher';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import Modal from '@/components/Modal';
 import ProgressBar from '@/components/ProgressBar';
 import StatusBadge from '@/components/StatusBadge';
+import ImageUploader from '@/components/ImageUploader';
 
 export default function ProjectsPage() {
   const { data: session } = useSession();
@@ -25,6 +26,7 @@ export default function ProjectsPage() {
     budget: '',
     startDate: new Date().toISOString().split('T')[0],
     endDate: '',
+    coverImageUrl: '',
     autoSeed: true,
   });
   const [error, setError] = useState('');
@@ -44,6 +46,7 @@ export default function ProjectsPage() {
         budget: Number(form.budget) || 0,
         startDate: form.startDate ? new Date(form.startDate).toISOString() : new Date().toISOString(),
         endDate: form.endDate ? new Date(form.endDate).toISOString() : new Date().toISOString(),
+        coverImageUrl: form.coverImageUrl,
         autoSeed: form.autoSeed,
       };
 
@@ -57,6 +60,7 @@ export default function ProjectsPage() {
         budget: '',
         startDate: new Date().toISOString().split('T')[0],
         endDate: '',
+        coverImageUrl: '',
         autoSeed: true,
       });
     } catch (err: any) {
@@ -112,41 +116,88 @@ export default function ProjectsPage() {
       {isLoading && <p className="text-sm text-signal-slate">Loading projects…</p>}
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {projects.map((p: any) => (
-          <Link
-            key={p.id}
-            href={`/dashboard/projects/${p.id}`}
-            className="group relative rounded-lg border border-blueprint-line bg-navy-900 p-4 transition-colors hover:border-signal-teal"
-          >
-            <div className="mb-2 flex items-start justify-between gap-2">
-              <h3 className="font-display text-base font-semibold text-paper truncate">{p.name}</h3>
-              <div className="flex items-center gap-2 shrink-0">
-                <StatusBadge status={p.status} />
+        {projects.map((p: any) => {
+          const coverPhoto = p.sitePhotos?.[0]?.imageUrl;
+          const photoCount = p.sitePhotos?.length || 0;
+
+          return (
+            <Link
+              key={p.id}
+              href={`/dashboard/projects/${p.id}`}
+              className="group relative flex flex-col justify-between overflow-hidden rounded-lg border border-blueprint-line bg-navy-900 transition-all duration-200 hover:border-signal-teal hover:shadow-lg"
+            >
+              {/* Image Preview Banner */}
+              <div className="relative aspect-[16/9] w-full overflow-hidden bg-navy-950 border-b border-blueprint-line/60">
+                {coverPhoto ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={coverPhoto}
+                    alt={p.name}
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src =
+                        'https://images.unsplash.com/photo-1541888946425-d0fbb18f15f6?auto=format&fit=crop&w=1200&q=80';
+                    }}
+                  />
+                ) : (
+                  <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-navy-950 to-navy-900 text-signal-slate">
+                    <ImageIcon size={28} className="opacity-40 text-signal-teal mb-1" />
+                    <span className="text-[11px] font-mono text-signal-slate/70">Blueprint / Site Plan</span>
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-navy-900 via-transparent to-transparent opacity-80" />
+
+                <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
+                  <StatusBadge status={p.status} />
+                  {photoCount > 0 && (
+                    <span className="flex items-center gap-1 rounded-full bg-navy-950/80 px-2 py-0.5 text-[10px] font-mono text-signal-teal backdrop-blur border border-signal-teal/30">
+                      <Camera size={10} /> {photoCount} photo{photoCount === 1 ? '' : 's'}
+                    </span>
+                  )}
+                </div>
+
                 {!isClient && (
-                  <button
-                    type="button"
-                    title="Delete project"
-                    disabled={deletingId === p.id}
-                    onClick={(e) => handleDelete(e, p.id, p.name)}
-                    className="rounded p-1 text-signal-slate hover:bg-signal-coral/15 hover:text-signal-coral disabled:opacity-50"
-                  >
-                    <Trash2 size={14} className={deletingId === p.id ? 'animate-spin' : ''} />
-                  </button>
+                  <div className="absolute top-2.5 right-2.5">
+                    <button
+                      type="button"
+                      title="Delete project"
+                      disabled={deletingId === p.id}
+                      onClick={(e) => handleDelete(e, p.id, p.name)}
+                      className="rounded bg-navy-950/80 p-1.5 text-signal-slate hover:bg-signal-coral hover:text-white transition-colors backdrop-blur disabled:opacity-50"
+                    >
+                      <Trash2 size={13} className={deletingId === p.id ? 'animate-spin' : ''} />
+                    </button>
+                  </div>
                 )}
               </div>
-            </div>
-            <p className="mb-3 text-xs text-signal-slate truncate">{p.location}</p>
-            <div className="mb-3 flex items-center justify-between text-sm">
-              <span className="text-signal-slate">Budget</span>
-              <span className="font-medium text-paper">{formatCurrency(p.budget)}</span>
-            </div>
-            <ProgressBar percent={p.progressPercent} />
-            <div className="mt-2.5 flex items-center justify-between text-xs text-signal-slate">
-              <span>{p.progressPercent}% complete</span>
-              <span>Ends {formatDate(p.endDate)}</span>
-            </div>
-          </Link>
-        ))}
+
+              {/* Project Card Content */}
+              <div className="p-4 space-y-3">
+                <div>
+                  <h3 className="font-display text-base font-semibold text-paper truncate group-hover:text-signal-teal transition-colors">
+                    {p.name}
+                  </h3>
+                  <p className="flex items-center gap-1 text-xs text-signal-slate truncate mt-0.5">
+                    <MapPin size={11} className="shrink-0 text-signal-teal" /> {p.location}
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between text-xs pt-1 border-t border-blueprint-line/40">
+                  <span className="text-signal-slate">Budget</span>
+                  <span className="font-medium text-paper font-mono">{formatCurrency(p.budget)}</span>
+                </div>
+
+                <div>
+                  <ProgressBar percent={p.progressPercent} />
+                  <div className="mt-1.5 flex items-center justify-between text-[11px] text-signal-slate">
+                    <span>{p.progressPercent}% complete</span>
+                    <span>Ends {formatDate(p.endDate)}</span>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          );
+        })}
       </div>
 
       {!isLoading && projects.length === 0 && (
@@ -184,6 +235,15 @@ export default function ProjectsPage() {
                 className="w-full rounded-md border border-blueprint-line bg-navy-800 px-3 py-2 text-sm text-paper focus:border-signal-teal focus:outline-none"
               />
             </div>
+
+            {/* Architectural Blueprint & Cover Photo Image Uploader */}
+            <ImageUploader
+              value={form.coverImageUrl}
+              onChange={(url) => setForm({ ...form, coverImageUrl: url })}
+              label="Blueprint / Elevation / Cover Photo (Optional)"
+              helperText="Upload architectural CAD drawing, 3D rendering, or site blueprint."
+              allowPresets={true}
+            />
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="mb-1 block text-xs text-signal-slate">Built-up area (sq.ft)</label>

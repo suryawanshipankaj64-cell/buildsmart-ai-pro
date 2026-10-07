@@ -34,7 +34,8 @@ import {
   Tractor,
   Scissors,
   Droplet,
-  Compass
+  Compass,
+  Navigation
 } from 'lucide-react';
 import { fetcher, postJson } from '@/lib/fetcher';
 import { formatCurrency, formatDate, formatNumber } from '@/lib/utils';
@@ -46,6 +47,7 @@ import RiskGauge from '@/components/RiskGauge';
 import DonutChart from '@/components/DonutChart';
 import PhaseBarChart from '@/components/PhaseBarChart';
 import Modal from '@/components/Modal';
+import ImageUploader from '@/components/ImageUploader';
 
 const TABS = ['Overview', 'Estimation', 'Planning', 'Site Photos', 'Budget', 'Risk', 'Statistics', 'History'] as const;
 
@@ -1308,24 +1310,34 @@ function UploadSitePhotoModal({
   const [caption, setCaption] = useState('');
   const [latitude, setLatitude] = useState('');
   const [longitude, setLongitude] = useState('');
+  const [gettingLocation, setGettingLocation] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Quick preset sample construction photos for demonstration
-  const samplePhotos = [
-    { label: 'Site Boundary Layout', url: 'https://images.unsplash.com/photo-1541888946425-d0fbb18f15f6?auto=format&fit=crop&w=1200&q=80' },
-    { label: 'Excavation & Footings', url: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=1200&q=80' },
-    { label: 'Reinforcement & Rebar', url: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&w=1200&q=80' },
-    { label: 'Masonry & Columns', url: 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=1200&q=80' },
-    { label: 'Plumbing CPVC & Drainage', url: 'https://images.unsplash.com/photo-1585704032915-c3400ca199e7?auto=format&fit=crop&w=1200&q=80' },
-    { label: 'Electrical Conduits & DB', url: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=1200&q=80' },
-    { label: 'Paint & Facade Primer', url: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=1200&q=80' },
-    { label: 'Interior Millwork & Ceiling', url: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=1200&q=80' },
-  ];
+  function handleGetLocation() {
+    if (!navigator.geolocation) {
+      alert('Geolocation is not supported by your browser.');
+      return;
+    }
+    setGettingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLatitude(pos.coords.latitude.toFixed(6));
+        setLongitude(pos.coords.longitude.toFixed(6));
+        setGettingLocation(false);
+      },
+      (err) => {
+        console.warn('Geolocation error:', err);
+        alert('Could not retrieve current GPS position. Please enter manually if needed.');
+        setGettingLocation(false);
+      },
+      { timeout: 10000, enableHighAccuracy: true }
+    );
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!imageUrl.trim()) {
-      alert('Please provide an image URL or choose a sample photo.');
+      alert('Please select or upload an image.');
       return;
     }
 
@@ -1344,6 +1356,7 @@ function UploadSitePhotoModal({
       });
 
       await mutate(`/api/projects/${projectId}`);
+      await mutate('/api/projects');
       onClose();
     } catch (err: any) {
       alert(err.message || 'Failed to upload photo');
@@ -1354,9 +1367,9 @@ function UploadSitePhotoModal({
 
   return (
     <Modal title="Upload Site Inspection Photo" onClose={onClose}>
-      <form onSubmit={handleSubmit} className="space-y-3">
+      <form onSubmit={handleSubmit} className="space-y-3.5">
         <div>
-          <label className="mb-1.5 block text-xs text-signal-slate">Related Phase</label>
+          <label className="mb-1 block text-xs text-signal-slate">Related Construction Phase</label>
           <select
             value={phase}
             onChange={(e) => setPhase(e.target.value)}
@@ -1368,39 +1381,17 @@ function UploadSitePhotoModal({
           </select>
         </div>
 
-        <div>
-          <label className="mb-1.5 block text-xs text-signal-slate">Image URL</label>
-          <input
-            required
-            value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
-            placeholder="https://... or choose preset below"
-            className="w-full rounded-md border border-blueprint-line bg-navy-800 px-3 py-2 text-sm text-paper focus:border-signal-teal focus:outline-none"
-          />
-        </div>
-
-        {/* Preset sample photo triggers */}
-        <div>
-          <span className="mb-1 block text-[11px] text-signal-slate">Quick Samples:</span>
-          <div className="flex flex-wrap gap-1.5">
-            {samplePhotos.map((s) => (
-              <button
-                type="button"
-                key={s.label}
-                onClick={() => {
-                  setImageUrl(s.url);
-                  if (!caption) setCaption(s.label);
-                }}
-                className="rounded border border-blueprint-line bg-navy-800 px-2 py-1 text-[10px] text-signal-slate hover:border-signal-teal hover:text-paper"
-              >
-                {s.label}
-              </button>
-            ))}
-          </div>
-        </div>
+        {/* Image Uploader with File Drag & Drop, URL, and Samples */}
+        <ImageUploader
+          value={imageUrl}
+          onChange={(url) => setImageUrl(url)}
+          label="Site Inspection Image / Blueprint"
+          helperText="Upload image file from your computer, drag & drop, or pick a sample."
+          allowPresets={true}
+        />
 
         <div>
-          <label className="mb-1.5 block text-xs text-signal-slate">Caption / Notes</label>
+          <label className="mb-1 block text-xs text-signal-slate">Caption / Notes</label>
           <input
             value={caption}
             onChange={(e) => setCaption(e.target.value)}
@@ -1409,27 +1400,39 @@ function UploadSitePhotoModal({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label className="mb-1.5 block text-xs text-signal-slate">Latitude (Optional)</label>
+        {/* GPS Geotagging Telemetry */}
+        <div className="rounded-md border border-blueprint-line/60 bg-navy-950/60 p-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-1.5 text-xs text-signal-slate font-medium">
+              <MapPin size={12} className="text-signal-teal" /> GPS Geotagging Telemetry
+            </span>
+            <button
+              type="button"
+              onClick={handleGetLocation}
+              disabled={gettingLocation}
+              className="flex items-center gap-1 text-[11px] text-signal-teal hover:underline font-mono"
+            >
+              <Navigation size={11} className={gettingLocation ? 'animate-spin' : ''} />
+              {gettingLocation ? 'Locating…' : 'Auto-Detect GPS'}
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
             <input
               type="number"
               step="any"
               value={latitude}
               onChange={(e) => setLatitude(e.target.value)}
-              placeholder="e.g. 19.0760"
-              className="w-full rounded-md border border-blueprint-line bg-navy-800 px-3 py-2 text-sm text-paper focus:border-signal-teal focus:outline-none"
+              placeholder="Latitude (e.g. 19.0760)"
+              className="w-full rounded-md border border-blueprint-line bg-navy-800 px-2.5 py-1.5 text-xs text-paper font-mono focus:border-signal-teal focus:outline-none"
             />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-xs text-signal-slate">Longitude (Optional)</label>
             <input
               type="number"
               step="any"
               value={longitude}
               onChange={(e) => setLongitude(e.target.value)}
-              placeholder="e.g. 72.8777"
-              className="w-full rounded-md border border-blueprint-line bg-navy-800 px-3 py-2 text-sm text-paper focus:border-signal-teal focus:outline-none"
+              placeholder="Longitude (e.g. 72.8777)"
+              className="w-full rounded-md border border-blueprint-line bg-navy-800 px-2.5 py-1.5 text-xs text-paper font-mono focus:border-signal-teal focus:outline-none"
             />
           </div>
         </div>
@@ -1437,9 +1440,9 @@ function UploadSitePhotoModal({
         <button
           type="submit"
           disabled={loading}
-          className="w-full flex items-center justify-center gap-2 rounded-md bg-signal-teal py-2.5 text-sm font-medium text-navy-950 hover:opacity-90 disabled:opacity-50"
+          className="w-full flex items-center justify-center gap-2 rounded-md bg-signal-teal py-2.5 text-sm font-semibold text-navy-950 transition-opacity hover:opacity-90 disabled:opacity-60"
         >
-          <UploadCloud size={16} /> {loading ? 'Uploading…' : 'Save Proof Photo'}
+          <UploadCloud size={16} /> {loading ? 'Saving & Syncing…' : 'Save & Attach Photo'}
         </button>
       </form>
     </Modal>

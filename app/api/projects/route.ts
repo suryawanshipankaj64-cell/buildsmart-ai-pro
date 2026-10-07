@@ -23,6 +23,9 @@ export async function GET(req: Request) {
         tasks: true,
         expenses: true,
         estimate: true,
+        sitePhotos: {
+          orderBy: { uploadedAt: 'desc' },
+        },
       },
     });
     return NextResponse.json(projects);
@@ -53,6 +56,7 @@ export async function POST(req: Request) {
       startDate,
       endDate,
       targetCompletion,
+      coverImageUrl,
       autoSeed = true,
     } = body;
 
@@ -178,6 +182,21 @@ export async function POST(req: Request) {
             isCompleted: false,
           },
         });
+      }
+    }
+
+    // 6. If coverImageUrl is provided, attach as initial Architectural Blueprint / Site Plan photo
+    if (coverImageUrl && typeof coverImageUrl === 'string' && coverImageUrl.trim()) {
+      try {
+        await prisma.sitePhoto.create({
+          data: {
+            projectId: project.id,
+            imageUrl: coverImageUrl.trim(),
+            caption: '[Planning] Architectural Blueprint / Master Elevation',
+          },
+        });
+      } catch (photoErr) {
+        console.error('FAILED_TO_ATTACH_COVER_PHOTO:', photoErr);
       }
     }
 
