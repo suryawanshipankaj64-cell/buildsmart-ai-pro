@@ -128,3 +128,4 @@ function hash(str: string): number {
   }
   return h;
 }
+
