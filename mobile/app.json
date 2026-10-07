@@ -19,11 +19,15 @@
       },
       "package": "com.buildsmart.aipro.mobile",
       "permissions": [
-        "CAMERA",
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE"
+        "android.permission.CAMERA",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
       ]
     },
     "plugins": [
@@ -52,6 +56,11 @@
       [
         "expo-secure-store"
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "56bcc16d-1349-4e60-a4e6-38af418450cd"
+      }
+    }
   }
 }

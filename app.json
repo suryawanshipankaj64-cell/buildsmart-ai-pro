@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "0432a85e-a041-4971-bbea-98fb7dae7b39"
+      }
+    },
+    "android": {
+      "package": "com.pankaj_7764.buildsmartaipro"
+    }
+  }
+}
