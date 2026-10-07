@@ -522,9 +522,11 @@ export const ProjectProgressScreen = () => {
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status === 'granted') {
-        const res = await ImagePicker.launchCameraAsync({ allowsEditing: true, quality: 0.7 });
+        const res = await ImagePicker.launchCameraAsync({ allowsEditing: true, quality: 0.6, base64: true });
         if (!res.canceled && res.assets && res.assets.length > 0) {
-          setPhotoUri(res.assets[0].uri);
+          const asset = res.assets[0];
+          const uri = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
+          setPhotoUri(uri);
           captureGps();
           return;
         }
@@ -533,9 +535,11 @@ export const ProjectProgressScreen = () => {
 
     // Fallback to library
     try {
-      const res = await ImagePicker.launchImageLibraryAsync({ allowsEditing: true, quality: 0.7 });
+      const res = await ImagePicker.launchImageLibraryAsync({ allowsEditing: true, quality: 0.6, base64: true });
       if (!res.canceled && res.assets && res.assets.length > 0) {
-        setPhotoUri(res.assets[0].uri);
+        const asset = res.assets[0];
+        const uri = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
+        setPhotoUri(uri);
         captureGps();
       }
     } catch (e) {

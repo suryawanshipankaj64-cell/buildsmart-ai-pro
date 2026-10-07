@@ -4,6 +4,8 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { getRequestAuth } from '@/lib/userAuth';
 
+import { getConstructionFallbackImage } from '@/lib/fallbackImages';
+
 export async function GET(req: Request) {
   try {
     const auth = await getRequestAuth(req);
@@ -71,20 +73,7 @@ export async function POST(req: Request) {
 
     let finalImageUrl = imageUrl.trim();
     if (finalImageUrl.startsWith('file://') || finalImageUrl.startsWith('content://')) {
-      const cap = (caption || '').toLowerCase();
-      if (cap.includes('paint')) {
-        finalImageUrl = 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=1200&q=80';
-      } else if (cap.includes('interior') || cap.includes('wood')) {
-        finalImageUrl = 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=1200&q=80';
-      } else if (cap.includes('plumb') || cap.includes('pipe')) {
-        finalImageUrl = 'https://images.unsplash.com/photo-1585704032915-c3400ca199e7?auto=format&fit=crop&w=1200&q=80';
-      } else if (cap.includes('electric') || cap.includes('wire')) {
-        finalImageUrl = 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=1200&q=80';
-      } else if (cap.includes('found') || cap.includes('foot')) {
-        finalImageUrl = 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=1200&q=80';
-      } else {
-        finalImageUrl = 'https://images.unsplash.com/photo-1541888946425-d0fbb18f15f6?auto=format&fit=crop&w=1200&q=80';
-      }
+      finalImageUrl = getConstructionFallbackImage(caption || 'Planning', caption || 'Site Inspection Proof');
     }
 
     const photo = await prisma.sitePhoto.create({

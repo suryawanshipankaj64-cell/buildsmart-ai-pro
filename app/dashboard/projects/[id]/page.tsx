@@ -48,6 +48,7 @@ import DonutChart from '@/components/DonutChart';
 import PhaseBarChart from '@/components/PhaseBarChart';
 import Modal from '@/components/Modal';
 import ImageUploader from '@/components/ImageUploader';
+import { getConstructionFallbackImage } from '@/lib/fallbackImages';
 
 const TABS = ['Overview', 'Estimation', 'Planning', 'Site Photos', 'Budget', 'Risk', 'Statistics', 'History'] as const;
 
@@ -190,17 +191,17 @@ function OverviewTab({
                 onClick={() => onSelectPhoto(photo)}
                 className="group relative cursor-pointer overflow-hidden rounded-md border border-blueprint-line bg-navy-950 transition-all hover:border-signal-teal"
               >
-                <div className="relative aspect-video w-full overflow-hidden bg-navy-900">
+                <div className="relative aspect-[16/9] min-h-[140px] w-full overflow-hidden bg-navy-900">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={photo.imageUrl}
+                    src={photo.imageUrl || getConstructionFallbackImage(photo.caption, photo.caption)}
                     alt={photo.caption || 'Site inspection'}
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1541888946425-d0fbb18f15f6?auto=format&fit=crop&w=1200&q=80';
+                      (e.target as HTMLImageElement).src = getConstructionFallbackImage(photo.caption, photo.caption);
                     }}
                     className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-navy-950/90 via-transparent to-transparent opacity-80" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-navy-950/70 via-transparent to-transparent opacity-60" />
                   <div className="absolute right-2 top-2 rounded bg-navy-950/80 p-1 text-paper opacity-0 backdrop-blur transition-opacity group-hover:opacity-100">
                     <Maximize2 size={12} />
                   </div>
@@ -1221,18 +1222,18 @@ function SitePhotosTab({ project, onSelectPhoto }: { project: any; onSelectPhoto
             >
               <div
                 onClick={() => onSelectPhoto(photo)}
-                className="relative aspect-video w-full cursor-pointer overflow-hidden bg-navy-950"
+                className="relative aspect-[16/9] min-h-[160px] w-full cursor-pointer overflow-hidden bg-navy-950"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={photo.imageUrl}
+                  src={photo.imageUrl || getConstructionFallbackImage(photo.caption, photo.caption)}
                   alt={photo.caption || 'Site inspection'}
                   onError={(e) => {
-                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1541888946425-d0fbb18f15f6?auto=format&fit=crop&w=1200&q=80';
+                    (e.target as HTMLImageElement).src = getConstructionFallbackImage(photo.caption, photo.caption);
                   }}
                   className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-navy-950/80 via-transparent to-transparent opacity-60" />
+                <div className="absolute inset-0 bg-gradient-to-t from-navy-950/60 via-transparent to-transparent opacity-50" />
                 <div className="absolute right-2 top-2 rounded bg-navy-950/80 p-1 text-paper opacity-0 backdrop-blur transition-opacity group-hover:opacity-100">
                   <Maximize2 size={14} />
                 </div>
@@ -1469,10 +1470,10 @@ function PhotoLightboxModal({ photo, onClose }: { photo: any; onClose: () => voi
         <div className="relative max-h-[60vh] overflow-hidden bg-black flex items-center justify-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={photo.imageUrl}
+            src={photo.imageUrl || getConstructionFallbackImage(photo.caption, photo.caption)}
             alt={photo.caption || 'Site inspection photo'}
             onError={(e) => {
-              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1541888946425-d0fbb18f15f6?auto=format&fit=crop&w=1200&q=80';
+              (e.target as HTMLImageElement).src = getConstructionFallbackImage(photo.caption, photo.caption);
             }}
             className="max-h-[60vh] w-auto max-w-full object-contain"
           />

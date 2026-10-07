@@ -98,11 +98,14 @@ export const TaskProofModal: React.FC<TaskProofModalProps> = ({
 
       const result = await ImagePicker.launchCameraAsync({
         allowsEditing: true,
-        quality: 0.7,
+        quality: 0.6,
+        base64: true,
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        setPhotoUri(result.assets[0].uri);
+        const asset = result.assets[0];
+        const uri = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
+        setPhotoUri(uri);
         // Geotag the inspection
         captureCoordinates();
       }
@@ -111,10 +114,13 @@ export const TaskProofModal: React.FC<TaskProofModalProps> = ({
       try {
         const result = await ImagePicker.launchImageLibraryAsync({
           allowsEditing: true,
-          quality: 0.7,
+          quality: 0.6,
+          base64: true,
         });
         if (!result.canceled && result.assets && result.assets.length > 0) {
-          setPhotoUri(result.assets[0].uri);
+          const asset = result.assets[0];
+          const uri = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
+          setPhotoUri(uri);
           captureCoordinates();
         }
       } catch (err) {

@@ -6,6 +6,7 @@ import { formatDate } from '@/lib/utils';
 import ProjectPicker from '@/components/ProjectPicker';
 import Modal from '@/components/Modal';
 import ImageUploader from '@/components/ImageUploader';
+import { getConstructionFallbackImage } from '@/lib/fallbackImages';
 import { Camera, Bell, Trash2, MapPin, Maximize2, X, Navigation, CheckCircle2, Layers } from 'lucide-react';
 
 const PHASES = [
@@ -168,18 +169,17 @@ export default function SitePage() {
                 className="group relative flex flex-col justify-between overflow-hidden rounded-md border border-blueprint-line bg-navy-950 cursor-pointer transition-all duration-200 hover:border-signal-teal hover:shadow-lg"
               >
                 {/* Photo Preview Thumbnail */}
-                <div className="relative aspect-video w-full overflow-hidden bg-navy-900">
+                <div className="relative aspect-[16/9] min-h-[160px] w-full overflow-hidden bg-navy-900">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={photo.imageUrl}
+                    src={photo.imageUrl || getConstructionFallbackImage(photo.caption, photo.caption)}
                     alt={photo.caption || 'Site photo'}
                     className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src =
-                        'https://images.unsplash.com/photo-1541888946425-d0fbb18f15f6?auto=format&fit=crop&w=1200&q=80';
+                      (e.target as HTMLImageElement).src = getConstructionFallbackImage(photo.caption, photo.caption);
                     }}
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-navy-950/80 via-transparent to-transparent opacity-60" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-navy-950/60 via-transparent to-transparent opacity-50" />
                   <div className="absolute right-2 top-2 rounded bg-navy-950/80 p-1 text-paper opacity-0 backdrop-blur transition-opacity group-hover:opacity-100">
                     <Maximize2 size={13} />
                   </div>
@@ -335,9 +335,12 @@ export default function SitePage() {
             <div className="flex-1 overflow-auto p-4 bg-navy-950 flex items-center justify-center">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={selectedLightboxPhoto.imageUrl}
+                src={selectedLightboxPhoto.imageUrl || getConstructionFallbackImage(selectedLightboxPhoto.caption, selectedLightboxPhoto.caption)}
                 alt={selectedLightboxPhoto.caption || 'Site Photo'}
                 className="max-h-[65vh] w-auto rounded-md object-contain border border-blueprint-line/40 shadow-lg"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = getConstructionFallbackImage(selectedLightboxPhoto.caption, selectedLightboxPhoto.caption);
+                }}
               />
             </div>
 

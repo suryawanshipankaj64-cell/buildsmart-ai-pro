@@ -274,3 +274,4 @@ function fileToDataUrl(file: File, maxDimension = 1600): Promise<string> {
     reader.readAsDataURL(file);
   });
 }
+

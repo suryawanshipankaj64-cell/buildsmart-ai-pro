@@ -10,6 +10,7 @@ import Modal from '@/components/Modal';
 import ProgressBar from '@/components/ProgressBar';
 import StatusBadge from '@/components/StatusBadge';
 import ImageUploader from '@/components/ImageUploader';
+import { getConstructionFallbackImage } from '@/lib/fallbackImages';
 
 export default function ProjectsPage() {
   const { data: session } = useSession();
@@ -135,17 +136,18 @@ export default function ProjectsPage() {
                     alt={p.name}
                     className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src =
-                        'https://images.unsplash.com/photo-1541888946425-d0fbb18f15f6?auto=format&fit=crop&w=1200&q=80';
+                      (e.target as HTMLImageElement).src = getConstructionFallbackImage('Planning', p.name);
                     }}
                   />
                 ) : (
-                  <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-navy-950 to-navy-900 text-signal-slate">
-                    <ImageIcon size={28} className="opacity-40 text-signal-teal mb-1" />
-                    <span className="text-[11px] font-mono text-signal-slate/70">Blueprint / Site Plan</span>
-                  </div>
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={getConstructionFallbackImage('Planning', p.name)}
+                    alt={p.name}
+                    className="h-full w-full object-cover opacity-80"
+                  />
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-navy-900 via-transparent to-transparent opacity-80" />
+                <div className="absolute inset-0 bg-gradient-to-t from-navy-900 via-transparent to-transparent opacity-60" />
 
                 <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
                   <StatusBadge status={p.status} />
