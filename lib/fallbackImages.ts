@@ -115,10 +115,12 @@ export function getConstructionFallbackImage(phase: string = 'Planning', caption
   <line x1="120" y1="370" x2="680" y2="370" stroke="#1E293B" stroke-width="1"/>
   <text x="130" y="395" font-family="ui-monospace, monospace" font-size="11" fill="#64748B">PROOF OF WORK VERIFIED</text>
   <text x="670" y="395" font-family="ui-monospace, monospace" font-size="11" fill="${primaryColor}" text-anchor="end">STATUS: ACTIVE ON-SITE</text>
-</svg>
   `.trim();
 
-  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+  if (typeof Buffer !== 'undefined') {
+    return `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
+  }
+  return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
 }
 
 function hash(str: string): number {
