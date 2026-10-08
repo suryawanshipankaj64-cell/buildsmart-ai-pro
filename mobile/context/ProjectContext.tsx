@@ -38,8 +38,10 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
             if (!hasLegacyFakeIds) {
               let initialProjects = parsed;
               if (isClient && user?.id) {
-                const clientFiltered = parsed.filter((p: Project) => p.userId === user.id);
-                if (clientFiltered.length > 0) initialProjects = clientFiltered;
+                const clientFiltered = parsed.filter((p: Project) => p.userId === user.id || p.clientId === user.id);
+                if (clientFiltered.length > 0) {
+                  initialProjects = clientFiltered;
+                }
               }
               setProjects(initialProjects);
               setActiveProjectIdState((prev) => (prev && initialProjects.some((p: Project) => p.id === prev) ? prev : initialProjects[0]?.id ?? null));
@@ -69,7 +71,10 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
 
       let finalProjects: Project[] = Array.isArray(data) ? data : [];
       if (isClient && user?.id) {
-        finalProjects = finalProjects.filter((p) => p.userId === user.id);
+        const clientFiltered = finalProjects.filter((p) => p.userId === user.id || p.clientId === user.id);
+        if (clientFiltered.length > 0) {
+          finalProjects = clientFiltered;
+        }
       }
 
       setProjects(finalProjects);

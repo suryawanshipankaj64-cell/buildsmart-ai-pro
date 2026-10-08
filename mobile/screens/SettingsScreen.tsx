@@ -21,6 +21,7 @@ import {
   RefreshCw,
   Sliders,
 } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { colors } from '../theme/colors';
 import { useAuth } from '../context/AuthContext';
@@ -30,6 +31,7 @@ import { fetchAdminRates, updateAdminRates, AdminRates } from '../api/rates';
 import { Banner } from '../components/Banner';
 
 export const SettingsScreen = () => {
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const { user, logout, isAdmin, isEngineer, isClient } = useAuth();
   const { refreshProjects } = useProjects();
@@ -141,7 +143,16 @@ export const SettingsScreen = () => {
   return (
     <View style={styles.container}>
       {/* Top Header */}
-      <View style={styles.header}>
+      <View
+        style={[
+          styles.header,
+          {
+            paddingTop: Math.max(insets.top + 8, 20),
+            paddingLeft: Math.max(insets.left, 16),
+            paddingRight: Math.max(insets.right, 16),
+          },
+        ]}
+      >
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
           <ArrowLeft size={20} color={colors.textPrimary} />
         </TouchableOpacity>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Menu, Bell, Shield } from 'lucide-react-native';
 import { colors } from '../theme/colors';
 import { useAuth } from '../context/AuthContext';
@@ -19,6 +20,7 @@ export const Header: React.FC<HeaderProps> = ({
   onNotificationsPress,
   unreadNotifications = 3,
 }) => {
+  const insets = useSafeAreaInsets();
   const { user, role } = useAuth();
   const userName = user?.name ? user.name.split(' ')[0] : role === 'ADMIN' ? 'Admin' : role === 'CLIENT' ? 'Client' : 'Engineer';
 
@@ -30,7 +32,16 @@ export const Header: React.FC<HeaderProps> = ({
       : 'Role: ENGINEER · Field Operations Suite';
 
   return (
-    <View style={styles.header}>
+    <View
+      style={[
+        styles.header,
+        {
+          paddingTop: Math.max(insets.top + 8, 24),
+          paddingLeft: Math.max(insets.left, 16),
+          paddingRight: Math.max(insets.right, 16),
+        },
+      ]}
+    >
       {/* Top Bar Navigation Actions */}
       <View style={styles.topRow}>
         <TouchableOpacity

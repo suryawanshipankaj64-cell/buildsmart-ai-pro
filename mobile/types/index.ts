@@ -81,6 +81,7 @@ export interface SitePhoto {
 export interface Project {
   id: string;
   userId: string;
+  clientId?: string | null;
   name: string;
   location: string;
   latitude?: number | null;

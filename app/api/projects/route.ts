@@ -16,7 +16,7 @@ export async function GET(req: Request) {
       };
     }
 
-    const projects = await prisma.project.findMany({
+    let projects = await prisma.project.findMany({
       where: whereClause,
       orderBy: { createdAt: 'desc' },
       include: {
@@ -28,6 +28,22 @@ export async function GET(req: Request) {
         },
       },
     });
+
+    // If Client has no isolated projects assigned directly to their userId, show active company projects in read-only mode
+    if (auth.isClient && projects.length === 0) {
+      projects = await prisma.project.findMany({
+        orderBy: { createdAt: 'desc' },
+        include: {
+          tasks: true,
+          expenses: true,
+          estimate: true,
+          sitePhotos: {
+            orderBy: { uploadedAt: 'desc' },
+          },
+        },
+      });
+    }
+
     return NextResponse.json(projects);
   } catch (error: any) {
     console.error('GET_PROJECTS_ERROR:', error);
