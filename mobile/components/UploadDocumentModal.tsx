@@ -24,7 +24,7 @@ interface UploadDocumentModalProps {
 }
 
 const CATEGORIES: DocumentCategory[] = ['PLANS', 'PERMITS', 'CONTRACTS', 'BILLS'];
-const ROLES: Role[] = ['ADMIN', 'ENGINEER', 'CONTRACTOR', 'CUSTOMER'];
+const ROLES: Role[] = ['ADMIN', 'ENGINEER', 'CLIENT'];
 
 export const UploadDocumentModal: React.FC<UploadDocumentModalProps> = ({
   visible,
@@ -38,7 +38,7 @@ export const UploadDocumentModal: React.FC<UploadDocumentModalProps> = ({
   const [version, setVersion] = useState<string>('v1.0');
   const [selectedFileName, setSelectedFileName] = useState<string>('Structural_Detail_Drawing.dwg.pdf');
   const [selectedFileSize, setSelectedFileSize] = useState<string>('4.8 MB');
-  const [selectedRoles, setSelectedRoles] = useState<Role[]>(['ADMIN', 'ENGINEER', 'CONTRACTOR']);
+  const [selectedRoles, setSelectedRoles] = useState<Role[]>(['ADMIN', 'ENGINEER', 'CLIENT']);
   const [isUploading, setIsUploading] = useState<boolean>(false);
 
   const toggleRole = (role: Role) => {
