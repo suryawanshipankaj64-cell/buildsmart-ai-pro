@@ -78,7 +78,10 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
       }
 
       setProjects(finalProjects);
-      if (finalProjects.length > 0) {
+      const targetProjectId = (user as any)?.projectId;
+      if (targetProjectId && finalProjects.some((p) => p.id === targetProjectId)) {
+        setActiveProjectIdState(targetProjectId);
+      } else if (finalProjects.length > 0) {
         setActiveProjectIdState((prev) => (prev && finalProjects.some((p) => p.id === prev) ? prev : finalProjects[0].id));
       } else {
         setActiveProjectIdState(null);

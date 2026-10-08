@@ -4,6 +4,7 @@ import { User } from '../types';
 export interface LoginResponse {
   token: string;
   user: User;
+  project?: any;
 }
 
 export async function loginWithCredentials(email: string, password: string): Promise<LoginResponse> {
@@ -48,6 +49,18 @@ export async function loginWithCredentials(email: string, password: string): Pro
       throw error;
     }
   }
+}
+
+export async function loginWithProjectId(projectId: string): Promise<LoginResponse> {
+  const data = await apiClient<LoginResponse>('/auth/mobile', {
+    method: 'POST',
+    body: JSON.stringify({ projectId: projectId.trim() }),
+  });
+
+  if (data.token) {
+    await setStoredToken(data.token);
+  }
+  return data;
 }
 
 export async function verifyCurrentSession(): Promise<User | null> {

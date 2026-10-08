@@ -3,7 +3,7 @@ import useSWR, { mutate } from 'swr';
 import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
-import { Plus, Trash2, MapPin } from 'lucide-react';
+import { Plus, Trash2, MapPin, Copy, Check } from 'lucide-react';
 import { fetcher, postJson } from '@/lib/fetcher';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import Modal from '@/components/Modal';
@@ -142,9 +142,24 @@ export default function ProjectsPage() {
               </div>
             </div>
 
-            <p className="mb-3.5 flex items-center gap-1.5 text-xs text-signal-slate truncate">
-              <MapPin size={12} className="text-signal-teal shrink-0" /> {p.location}
-            </p>
+            <div className="mb-2 flex items-center justify-between gap-1 text-xs">
+              <p className="flex items-center gap-1.5 text-signal-slate truncate">
+                <MapPin size={12} className="text-signal-teal shrink-0" /> {p.location}
+              </p>
+              <div
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  navigator.clipboard.writeText(p.id);
+                  alert(`Project ID copied to clipboard: ${p.id}`);
+                }}
+                title="Click to copy Project ID for Client / Engineer"
+                className="inline-flex items-center gap-1 bg-cyan-950/80 border border-cyan-700/50 hover:border-cyan-400 px-1.5 py-0.5 rounded text-[10px] font-mono text-cyan-300 transition-colors cursor-pointer"
+              >
+                <span>ID: {p.id.length > 12 ? `${p.id.slice(0, 10)}...` : p.id}</span>
+                <Copy size={10} className="text-cyan-400 shrink-0" />
+              </div>
+            </div>
 
             <div className="mb-3 flex items-center justify-between border-t border-blueprint-line/40 pt-2.5 text-sm">
               <span className="text-signal-slate text-xs">Budget</span>

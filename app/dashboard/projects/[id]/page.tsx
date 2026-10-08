@@ -35,7 +35,8 @@ import {
   Scissors,
   Droplet,
   Compass,
-  Navigation
+  Navigation,
+  Copy
 } from 'lucide-react';
 import { fetcher, postJson } from '@/lib/fetcher';
 import { formatCurrency, formatDate, formatNumber } from '@/lib/utils';
@@ -85,8 +86,21 @@ function ProjectDetailContent() {
     <div>
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="font-display text-2xl text-paper">{project.name}</h2>
-          <p className="text-sm text-signal-slate">{project.location}</p>
+          <div className="flex items-center gap-3 flex-wrap">
+            <h2 className="font-display text-2xl text-paper">{project.name}</h2>
+            <div
+              onClick={() => {
+                navigator.clipboard.writeText(project.id);
+                alert(`Project ID copied to clipboard: ${project.id}`);
+              }}
+              title="Click to copy Project ID for Client / Engineer access"
+              className="inline-flex items-center gap-1.5 bg-cyan-950/80 border border-cyan-700/60 hover:border-cyan-400 px-2.5 py-1 rounded text-xs font-mono text-cyan-300 transition-colors cursor-pointer"
+            >
+              <span>Project ID: {project.id}</span>
+              <Copy size={12} className="text-cyan-400 shrink-0" />
+            </div>
+          </div>
+          <p className="text-sm text-signal-slate mt-1">{project.location}</p>
         </div>
         <StatusBadge status={project.status} />
       </div>

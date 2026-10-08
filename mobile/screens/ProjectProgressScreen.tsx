@@ -740,6 +740,15 @@ export const ProjectProgressScreen = () => {
               <Text style={styles.projectNameTitle} numberOfLines={1}>
                 {currentProject?.name || 'Active Project Construction'}
               </Text>
+              {currentProject?.id && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+                  <View style={{ backgroundColor: 'rgba(59, 130, 246, 0.15)', borderWidth: 1, borderColor: 'rgba(59, 130, 246, 0.4)', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
+                    <Text style={{ color: '#93C5FD', fontSize: 10, fontFamily: 'monospace', fontWeight: '700' }}>
+                      PROJECT ID: {currentProject.id}
+                    </Text>
+                  </View>
+                </View>
+              )}
             </View>
             <View style={styles.progressPercentBox}>
               <Text style={styles.progressPercentNumber}>{overallProgress}%</Text>

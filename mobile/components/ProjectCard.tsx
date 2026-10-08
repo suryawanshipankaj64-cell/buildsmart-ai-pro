@@ -54,6 +54,9 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
               <Text style={styles.locationText} numberOfLines={1}>
                 {project.location}
               </Text>
+              <View style={styles.projectIdBadge}>
+                <Text style={styles.projectIdText}>ID: {project.id}</Text>
+              </View>
             </View>
           </View>
         </View>
@@ -176,6 +179,21 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 11,
     fontFamily: 'monospace',
+  },
+  projectIdBadge: {
+    backgroundColor: 'rgba(59, 130, 246, 0.12)',
+    borderColor: 'rgba(59, 130, 246, 0.4)',
+    borderWidth: 1,
+    borderRadius: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    marginLeft: 4,
+  },
+  projectIdText: {
+    color: '#60A5FA',
+    fontSize: 9,
+    fontFamily: 'monospace',
+    fontWeight: '700',
   },
   statusBadge: {
     flexDirection: 'row',

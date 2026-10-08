@@ -20,6 +20,7 @@ interface AuthContextType {
   canEditData: boolean;
   canManageRates: boolean;
   login: (email: string, pass: string) => Promise<User>;
+  loginByProjectId: (projectId: string) => Promise<User>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -65,6 +66,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(true);
     try {
       const res = await loginWithCredentials(email, pass);
+      setToken(res.token);
+      setUser(res.user);
+      await setSecureItem(SAVED_USER_KEY, JSON.stringify(res.user));
+      return res.user;
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function loginByProjectId(projectId: string): Promise<User> {
+    const { loginWithProjectId } = await import('../api/auth');
+    setIsLoading(true);
+    try {
+      const res = await loginWithProjectId(projectId);
       setToken(res.token);
       setUser(res.user);
       await setSecureItem(SAVED_USER_KEY, JSON.stringify(res.user));
@@ -129,6 +144,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         canEditData,
         canManageRates,
         login,
+        loginByProjectId,
         logout,
         refreshUser,
       }}
