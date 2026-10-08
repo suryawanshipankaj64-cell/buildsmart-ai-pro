@@ -30,7 +30,6 @@ import {
   ChevronUp,
   FolderKanban,
   Hash,
-  ExternalLink,
 } from 'lucide-react-native';
 import { colors } from '../theme/colors';
 import { useAuth } from '../context/AuthContext';
@@ -41,8 +40,7 @@ interface ProfilePreset {
   id: string;
   name: string;
   email: string;
-  password: string;
-  role: 'ADMIN' | 'ENGINEER' | 'CLIENT';
+  role: 'ADMIN' | 'ENGINEER';
   title: string;
   badge: string;
   color: string;
@@ -52,10 +50,9 @@ interface ProfilePreset {
 const STAFF_PROFILES: ProfilePreset[] = [
   {
     id: 'cmuxajza300003v0vw4ho433d',
-    name: 'Pankaj Suryawanshi',
-    title: 'Executive Admin',
+    name: 'Administrator',
+    title: 'Executive Admin Suite',
     email: 'pankajsuryawanshi7764@gmail.com',
-    password: '9403496516',
     role: 'ADMIN',
     badge: 'ADMIN SUITE',
     color: colors.primaryAccent,
@@ -63,10 +60,9 @@ const STAFF_PROFILES: ProfilePreset[] = [
   },
   {
     id: 'cmuxajzjh00023v0vvacm1fwd',
-    name: 'Rajesh Sharma',
-    title: 'Site Engineer',
+    name: 'Site Engineer',
+    title: 'Field Operations & Construction',
     email: 'engineer@buildsmart.ai',
-    password: 'engineer123',
     role: 'ENGINEER',
     badge: 'FIELD OPS',
     color: colors.secondaryInfo,
@@ -81,14 +77,14 @@ export const LoginScreen = () => {
   // Auth Mode: 'STAFF' (Admin/Engineer) vs 'CLIENT' (Project ID Login)
   const [authMode, setAuthMode] = useState<'STAFF' | 'CLIENT'>('STAFF');
   
-  // Staff Login State
+  // Staff Login State (Password is entered manually by user)
   const [selectedProfileId, setSelectedProfileId] = useState<string>('cmuxajza300003v0vw4ho433d');
   const [email, setEmail] = useState<string>('pankajsuryawanshi7764@gmail.com');
-  const [password, setPassword] = useState<string>('9403496516');
+  const [password, setPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
   
-  // Client Project ID Login State
-  const [clientProjectId, setClientProjectId] = useState<string>('cmuyaiuku0001x68n02k68s00');
+  // Client Project ID Login State (Starts empty for user input)
+  const [clientProjectId, setClientProjectId] = useState<string>('');
   
   // System Config State
   const [hostIp, setHostIp] = useState<string>('');
@@ -115,13 +111,14 @@ export const LoginScreen = () => {
   const handleSelectStaffProfile = (preset: ProfilePreset) => {
     setSelectedProfileId(preset.id);
     setEmail(preset.email);
-    setPassword(preset.password);
+    // Password must be entered manually by the user
+    setPassword('');
     setErrorMessage(null);
   };
 
   const handleStaffLogin = async () => {
     if (!email.trim() || !password.trim()) {
-      setErrorMessage('Please enter both engineer email/identifier and password.');
+      setErrorMessage('Please enter both your email/identifier and your password.');
       return;
     }
 
@@ -134,7 +131,7 @@ export const LoginScreen = () => {
       console.warn('Login failure:', err);
       setErrorMessage(
         err?.message ||
-          'Authentication failed. Please verify your credentials or check your backend connection.'
+          'Authentication failed. Please check your password or server connection.'
       );
     } finally {
       setIsLoading(false);
@@ -143,7 +140,7 @@ export const LoginScreen = () => {
 
   const handleClientProjectLogin = async () => {
     if (!clientProjectId.trim()) {
-      setErrorMessage('Please enter your Project ID / Code to access your project dashboard.');
+      setErrorMessage('Please enter your Project ID to view your project information.');
       return;
     }
 
@@ -156,7 +153,7 @@ export const LoginScreen = () => {
       console.warn('Client access failure:', err);
       setErrorMessage(
         err?.message ||
-          `Could not find project with ID: "${clientProjectId}". Please check with your site engineer.`
+          `Could not find project with ID: "${clientProjectId}". Please verify with your Site Engineer.`
       );
     } finally {
       setIsLoading(false);
@@ -239,7 +236,7 @@ export const LoginScreen = () => {
                 authMode === 'CLIENT' && { color: '#60A5FA', fontWeight: '800' },
               ]}
             >
-              CLIENT PORTAL (ID)
+              CLIENT PORTAL (PROJECT ID)
             </Text>
           </TouchableOpacity>
         </View>
@@ -249,16 +246,16 @@ export const LoginScreen = () => {
              STAFF MODE (ADMIN & ENGINEER)
              ========================================================================= */
           <>
-            {/* Identity Quick Selection Cards */}
+            {/* Identity Selection Cards */}
             <View style={styles.sectionCard}>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>SELECT VERIFIED IDENTITY</Text>
+                <Text style={styles.sectionTitle}>SELECT ROLE IDENTITY</Text>
                 <View style={styles.counterBadge}>
-                  <Text style={styles.counterBadgeText}>ADMIN & ENGINEER</Text>
+                  <Text style={styles.counterBadgeText}>STAFF CLEARANCE</Text>
                 </View>
               </View>
               <Text style={styles.sectionHelper}>
-                Tap any profile to auto-fill credentials:
+                Select your role, then enter your password below:
               </Text>
 
               <View style={styles.profileGrid}>
@@ -330,7 +327,7 @@ export const LoginScreen = () => {
             {/* Staff Credentials Form Card */}
             <View style={styles.card}>
               <View style={styles.cardHeader}>
-                <Text style={styles.cardTitle}>STAFF AUTHENTICATION</Text>
+                <Text style={styles.cardTitle}>ENTER CREDENTIALS</Text>
                 <View style={styles.securePill}>
                   <KeyRound size={11} color={colors.primaryAccent} />
                   <Text style={styles.secureText}>JWT SECURE</Text>
@@ -357,18 +354,19 @@ export const LoginScreen = () => {
                 </View>
               </View>
 
-              {/* Password Input */}
+              {/* Password Input (Manually entered) */}
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>SECURITY KEY / PASSWORD</Text>
+                <Text style={styles.inputLabel}>ENTER PASSWORD</Text>
                 <View style={styles.inputWrapper}>
                   <KeyRound size={16} color={colors.textMuted} style={styles.inputIcon} />
                   <TextInput
                     style={[styles.input, { paddingRight: 40 }]}
                     value={password}
                     onChangeText={setPassword}
-                    placeholder="••••••••"
+                    placeholder="Enter your security password"
                     placeholderTextColor={colors.textMuted}
                     secureTextEntry={!showPassword}
+                    autoCapitalize="none"
                   />
                   <TouchableOpacity
                     style={styles.eyeBtn}
@@ -403,7 +401,7 @@ export const LoginScreen = () => {
           </>
         ) : (
           /* =========================================================================
-             CLIENT PORTAL MODE (ENTER PROJECT ID DIRECTLY)
+             CLIENT PORTAL MODE (ENTER PROJECT ID MANUALLY)
              ========================================================================= */
           <View style={[styles.card, { borderColor: '#3B82F6', borderWidth: 1.5 }]}>
             <View style={styles.cardHeader}>
@@ -417,19 +415,19 @@ export const LoginScreen = () => {
             </View>
 
             <Text style={styles.clientPortalDesc}>
-              Enter the unique <Text style={{ color: '#60A5FA', fontWeight: '700' }}>Project ID</Text> provided by your Site Engineer to view your live construction telemetry, milestone photos, expenses, and blueprints.
+              Enter your assigned <Text style={{ color: '#60A5FA', fontWeight: '700' }}>Project ID</Text> to view all real-time construction information, milestone execution, verified inspection photos, and expenses.
             </Text>
 
             {/* Project ID Input */}
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>ENTER PROJECT ID / ACCESS CODE</Text>
+              <Text style={styles.inputLabel}>ENTER YOUR PROJECT ID</Text>
               <View style={[styles.inputWrapper, { borderColor: '#3B82F6' }]}>
                 <Hash size={16} color="#60A5FA" style={styles.inputIcon} />
                 <TextInput
-                  style={[styles.input, { color: '#60A5FA', fontWeight: '700' }]}
+                  style={[styles.input, { color: '#93C5FD', fontWeight: '700' }]}
                   value={clientProjectId}
                   onChangeText={setClientProjectId}
-                  placeholder="e.g. cmuyaiuku0001x68n02k68s00"
+                  placeholder="Paste or enter Project ID here"
                   placeholderTextColor={colors.textMuted}
                   autoCapitalize="none"
                   autoCorrect={false}
@@ -437,25 +435,11 @@ export const LoginScreen = () => {
               </View>
             </View>
 
-            {/* Active Project Quick-Select Card */}
-            <TouchableOpacity
-              style={styles.quickProjectPill}
-              onPress={() => setClientProjectId('cmuyaiuku0001x68n02k68s00')}
-              activeOpacity={0.8}
-            >
-              <FolderKanban size={14} color="#60A5FA" />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.quickProjectTitle}>Active Site: farm (Sangli)</Text>
-                <Text style={styles.quickProjectId}>ID: cmuyaiuku0001x68n02k68s00</Text>
-              </View>
-              <Text style={styles.quickProjectSelect}>Select</Text>
-            </TouchableOpacity>
-
             {/* Client Enter Button */}
             <TouchableOpacity
               style={[
                 styles.loginBtn,
-                { backgroundColor: '#3B82F6' },
+                { backgroundColor: '#3B82F6', marginTop: 12 },
                 isLoading && styles.loginBtnDisabled,
               ]}
               onPress={handleClientProjectLogin}
@@ -463,11 +447,11 @@ export const LoginScreen = () => {
               activeOpacity={0.85}
             >
               {isLoading ? (
-                <ActivityIndicator size="small" color="#071224" />
+                <ActivityIndicator size="small" color="#FFF" />
               ) : (
                 <>
                   <Text style={[styles.loginBtnText, { color: '#FFF' }]}>
-                    ACCESS PROJECT DASHBOARD
+                    SHOW PROJECT INFORMATION
                   </Text>
                   <ArrowRight size={18} color="#FFF" />
                 </>
@@ -594,7 +578,7 @@ const styles = StyleSheet.create({
     borderColor: '#3B82F6',
   },
   modeTabText: {
-    fontSize: 11,
+    fontSize: 10,
     fontFamily: 'monospace',
     color: colors.textMuted,
     fontWeight: '600',
@@ -745,35 +729,6 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     lineHeight: 16,
     marginBottom: 14,
-  },
-  quickProjectPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(59, 130, 246, 0.3)',
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 14,
-  },
-  quickProjectTitle: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#93C5FD',
-  },
-  quickProjectId: {
-    fontSize: 9,
-    fontFamily: 'monospace',
-    color: '#60A5FA',
-    marginTop: 2,
-  },
-  quickProjectSelect: {
-    fontSize: 10,
-    fontWeight: '800',
-    fontFamily: 'monospace',
-    color: '#38BDF8',
-    textTransform: 'uppercase',
   },
   securePill: {
     flexDirection: 'row',

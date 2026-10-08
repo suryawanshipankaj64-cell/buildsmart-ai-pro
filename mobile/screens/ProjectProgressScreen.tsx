@@ -974,10 +974,30 @@ export const ProjectProgressScreen = () => {
                   return null;
                 }
 
-                const phasePhotos = sitePhotos.filter((p) =>
-                  (p.caption || '').toLowerCase().includes(`[${phase.toLowerCase()}]`) ||
-                  (p.caption || '').toLowerCase().includes(phase.toLowerCase())
-                );
+                const phasePhotos = sitePhotos.filter((p) => {
+                  const cap = (p.caption || '').toLowerCase();
+                  const phaseLower = phase.toLowerCase();
+                  if (cap.includes(`[${phaseLower}]`)) return true;
+                  if (cap.includes(phaseLower)) return true;
+                  const words = phaseLower.split(/[\s&/]+/).filter((w) => w.length > 3);
+                  return words.some((w) => cap.includes(w));
+                });
+
+                // Also include any proof photos uploaded on tasks in this phase
+                const taskProofPhotos: SitePhoto[] = phaseMatchingTasks
+                  .filter((t) => t.proofImageUrl && typeof t.proofImageUrl === 'string' && t.proofImageUrl.trim().length > 0)
+                  .map((t) => ({
+                    id: `proof-${t.id}`,
+                    projectId: selectedProjectId,
+                    imageUrl: t.proofImageUrl!,
+                    caption: `[${phase}] Proof: ${t.title}`,
+                    uploadedAt: t.createdAt || new Date().toISOString(),
+                  }));
+
+                const combinedPhasePhotos = [
+                  ...phasePhotos,
+                  ...taskProofPhotos.filter((tp) => !phasePhotos.some((pp) => pp.imageUrl === tp.imageUrl)),
+                ];
 
                 const phaseAvg = phaseAllTasks.length
                   ? Math.round(
@@ -1023,7 +1043,7 @@ export const ProjectProgressScreen = () => {
                           </View>
                         </View>
                         <Text style={styles.phaseSubText}>
-                          {phaseAllTasks.filter((t) => t.isCompleted || t.progressPercent >= 100).length} of {phaseAllTasks.length} task(s) done · {phasePhotos.length} photo(s)
+                          {phaseAllTasks.filter((t) => t.isCompleted || t.progressPercent >= 100).length} of {phaseAllTasks.length} task(s) done · {combinedPhasePhotos.length} photo(s)
                         </Text>
                       </View>
 
@@ -1063,13 +1083,13 @@ export const ProjectProgressScreen = () => {
                     </View>
 
                     {/* Inline Proof Photos Thumbnails Strip */}
-                    {phasePhotos.length > 0 && (
+                    {combinedPhasePhotos.length > 0 && (
                       <ScrollView
                         horizontal
                         showsHorizontalScrollIndicator={false}
                         style={styles.phasePhotosStrip}
                       >
-                        {phasePhotos.map((photo) => (
+                        {combinedPhasePhotos.map((photo) => (
                           <TouchableOpacity
                             key={photo.id}
                             style={styles.phasePhotoThumb}
