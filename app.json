@@ -7,6 +7,12 @@
     },
     "android": {
       "package": "com.pankaj_7764.buildsmartaipro"
+    },
+    "ios": {
+      "bundleIdentifier": "com.buildsmart.aipro.mobile",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     }
   }
 }
