@@ -29,12 +29,7 @@ export async function GET(req: Request) {
     if (targetProjectId) {
       whereClause.projectId = targetProjectId;
     } else if (auth.isClient && auth.userId) {
-      whereClause.project = {
-        OR: [
-          { userId: auth.userId },
-          { clientId: auth.userId },
-        ],
-      };
+      whereClause.project = { userId: auth.userId };
     }
 
     const tasks = await prisma.task.findMany({

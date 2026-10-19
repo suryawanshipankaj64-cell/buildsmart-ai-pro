@@ -26,12 +26,17 @@ export async function GET(
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
 
-    // Client isolation check: Client can ONLY access their own project
-    if (auth.isClient && auth.userId && project.userId !== auth.userId) {
-      return NextResponse.json(
-        { error: 'Access denied. You can only view your own assigned project.' },
-        { status: 403 }
-      );
+    // Client isolation check: Client can ONLY access their own assigned project
+    if (auth.isClient) {
+      const isAssigned =
+        (auth.projectId && auth.projectId === project.id) ||
+        (auth.userId && project.userId === auth.userId);
+      if (!isAssigned) {
+        return NextResponse.json(
+          { error: 'Access denied. You can only view your own assigned project.' },
+          { status: 403 }
+        );
+      }
     }
 
     return NextResponse.json(project);

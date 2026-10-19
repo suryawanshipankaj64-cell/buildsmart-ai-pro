@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { calculateProjectEstimate } from '@/lib/estimation';
+import { getRequestAuth } from '@/lib/userAuth';
 
 export async function POST(
   req: Request,
@@ -10,8 +11,18 @@ export async function POST(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user) {
+    const auth = await getRequestAuth(req);
+
+    const user = session?.user || (auth.userId ? { id: auth.userId, role: auth.role } : null);
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (auth.isClient) {
+      return NextResponse.json(
+        { error: 'Clients have view-only access' },
+        { status: 403 }
+      );
     }
 
     const { id } = params;
@@ -26,10 +37,13 @@ export async function POST(
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
 
-    const isOwner = project.userId === (session.user as any).id;
-    const isAdmin = (session.user as any).role === 'ADMIN';
+    const userRole = ((session?.user as any)?.role || auth.role || '').toUpperCase();
+    const userId = (session?.user as any)?.id || auth.userId;
+    const isOwner = userId ? project.userId === userId : false;
+    const isAdmin = userRole === 'ADMIN' || auth.isAdmin;
+    const isEngineer = userRole === 'ENGINEER' || auth.isEngineer;
 
-    if (!isOwner && !isAdmin) {
+    if (!isOwner && !isAdmin && !isEngineer) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
@@ -56,19 +70,25 @@ export async function POST(
       adminRates
     );
 
+    // CRITICAL: equipmentItems is computed for UI/PDF display, not a column in Prisma Estimate model!
+    const { equipmentItems, ...estimateDbFields } = estimateData;
+
     // Upsert the estimate for this project
     const estimate = await prisma.estimate.upsert({
       where: { projectId: id },
       create: {
         projectId: id,
-        ...estimateData,
+        ...estimateDbFields,
       },
       update: {
-        ...estimateData,
+        ...estimateDbFields,
       },
     });
 
-    return NextResponse.json(estimate);
+    return NextResponse.json({
+      ...estimate,
+      equipmentItems,
+    });
   } catch (error: any) {
     console.error('ESTIMATE_API_ERROR:', error);
     return NextResponse.json(
