@@ -13,30 +13,8 @@ export function getAutoDetectedHost(): string {
   if (process.env.EXPO_PUBLIC_API_URL) {
     return process.env.EXPO_PUBLIC_API_URL.replace(/\/+$/, '');
   }
-  try {
-    // 1. Try to extract from Expo dev server hostUri (automatically populated when running via Expo Go)
-    const hostUri =
-      Constants.expoConfig?.hostUri ||
-      (Constants as any).manifest2?.extra?.expoClient?.hostUri ||
-      (Constants as any).manifest?.debuggerHost ||
-      (Constants as any).manifest2?.extra?.expoGo?.debuggerHost;
-
-    if (hostUri && typeof hostUri === 'string') {
-      const ip = hostUri.split(':')[0];
-      if (ip && ip !== 'localhost' && ip !== '127.0.0.1') {
-        return `http://${ip}:3000/api`;
-      }
-    }
-  } catch (e) {
-    console.warn('Auto-detect host IP error:', e);
-  }
-
-  // 2. Physical device or emulator fallback
-  return Platform.select({
-    android: `http://${WORKSTATION_LAN_IP}:3000/api`,
-    ios: `http://${WORKSTATION_LAN_IP}:3000/api`,
-    default: 'http://localhost:3000/api',
-  }) || `http://${WORKSTATION_LAN_IP}:3000/api`;
+  // Production Cloud API is accessible globally over 5G/4G/Wi-Fi
+  return CLOUD_API_URL;
 }
 
 // Secure storage helpers with Web platform fallback
@@ -92,13 +70,15 @@ export async function clearStoredSession(): Promise<void> {
 export async function getStoredHostIp(): Promise<string> {
   const customHost = await getSecureItem(HOST_IP_KEY);
   if (customHost && customHost.trim().length > 0) {
-    // If it was previously set to emulator 10.0.2.2 on a real device, prefer the real LAN IP
-    if (customHost.includes('10.0.2.2') && Platform.OS !== 'web') {
-      return getAutoDetectedHost();
+    if (customHost.startsWith('https://')) {
+      return customHost.trim();
+    }
+    if (Platform.OS !== 'web') {
+      return CLOUD_API_URL;
     }
     return customHost.trim();
   }
-  return getAutoDetectedHost();
+  return CLOUD_API_URL;
 }
 
 export async function setStoredHostIp(ip: string): Promise<void> {

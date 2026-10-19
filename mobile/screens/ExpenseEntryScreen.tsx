@@ -47,7 +47,7 @@ export const ExpenseEntryScreen = () => {
   const { projects, activeProject, refreshProjects } = useProjects();
 
   const [selectedProjectId, setSelectedProjectId] = useState<string>(
-    route.params?.projectId || activeProject?.id || ''
+    route.params?.projectId || activeProject?.id || (projects[0]?.id ?? '')
   );
   const [category, setCategory] = useState<ExpenseCategory>('MATERIAL');
   const [itemName, setItemName] = useState<string>('');
@@ -62,7 +62,7 @@ export const ExpenseEntryScreen = () => {
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [bannerMsg, setBannerMsg] = useState<string | null>(null);
 
-  const targetProjectId = selectedProjectId || activeProject?.id;
+  const targetProjectId = selectedProjectId || activeProject?.id || projects[0]?.id;
 
   const loadExpenses = useCallback(async () => {
     if (!targetProjectId) return;
@@ -78,11 +78,14 @@ export const ExpenseEntryScreen = () => {
   }, [targetProjectId]);
 
   useEffect(() => {
-    if (activeProject?.id && !selectedProjectId) {
-      setSelectedProjectId(activeProject.id);
+    if (projects.length > 0) {
+      if (!selectedProjectId || !projects.some((p) => p.id === selectedProjectId)) {
+        const nextId = activeProject?.id || projects[0].id;
+        setSelectedProjectId(nextId);
+      }
     }
     loadExpenses();
-  }, [activeProject, selectedProjectId, loadExpenses]);
+  }, [projects, activeProject, selectedProjectId, loadExpenses]);
 
   const onRefresh = async () => {
     setRefreshing(true);

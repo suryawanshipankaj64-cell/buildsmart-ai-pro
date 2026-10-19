@@ -22,6 +22,7 @@ export async function createExpense(payload: CreateExpensePayload): Promise<Expe
       ...payload,
       amount: Number(payload.amount),
     }),
+    timeoutMs: 30000,
   });
 }
 
