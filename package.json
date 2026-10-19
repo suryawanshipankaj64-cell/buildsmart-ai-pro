@@ -11,7 +11,9 @@
     "db:push": "prisma db push",
     "db:generate": "prisma generate",
     "db:studio": "prisma studio",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "mobile": "npm --prefix mobile start",
+    "mobile:clear": "npm --prefix mobile run start -- -c"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.122.0",
