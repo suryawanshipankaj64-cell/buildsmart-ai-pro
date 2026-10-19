@@ -53,7 +53,8 @@
       ],
       [
         "expo-secure-store"
-      ]
+      ],
+      "expo-sharing"
     ],
     "extra": {
       "eas": {
