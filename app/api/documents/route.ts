@@ -7,6 +7,7 @@ interface DocumentRecord {
   id: string;
   projectId: string;
   projectName?: string;
+  phaseName?: string;
   title: string;
   category: 'PLANS' | 'PERMITS' | 'CONTRACTS' | 'BILLS';
   fileName: string;
@@ -30,6 +31,7 @@ let documentsStore: DocumentRecord[] = [
   {
     id: 'doc-101',
     projectId: 'seed-project-1',
+    phaseName: 'Superstructure & Masonry',
     title: 'Architectural Blueprint - Structural Slab Level 3',
     category: 'PLANS',
     fileName: 'Structural_Blueprint_L3_Rev4.pdf',
@@ -37,9 +39,9 @@ let documentsStore: DocumentRecord[] = [
     version: 'v4.2',
     uploadedBy: 'Site Engineer (Field Operations)',
     uploadedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    url: 'https://buildsmart.ai/storage/plans/blueprint-l3-v4.pdf',
+    url: 'https://images.unsplash.com/photo-1541888946425-d0fbb18f15f6?auto=format&fit=crop&w=1200&q=80',
     roleVisibility: ['ADMIN', 'ENGINEER', 'CONTRACTOR', 'CUSTOMER'],
-    tags: ['RCC', 'Structural', 'Level 3', 'Approved'],
+    tags: ['RCC', 'Structural', 'Level 3', 'Superstructure & Masonry', 'Approved'],
     history: [
       { version: 'v4.2', date: '2 days ago', changedBy: 'Site Engineer', note: 'Reinforcement bar spacing adjustment per structural audit.' },
       { version: 'v4.1', date: '10 days ago', changedBy: 'Sarah Connor', note: 'Shear wall reinforcement alignment.' },
@@ -49,6 +51,7 @@ let documentsStore: DocumentRecord[] = [
   {
     id: 'doc-102',
     projectId: 'seed-project-1',
+    phaseName: 'Planning',
     title: 'Municipal Corporation Environmental Clearance & NOC',
     category: 'PERMITS',
     fileName: 'Municipal_NOC_Fire_Pollution.pdf',
@@ -56,9 +59,9 @@ let documentsStore: DocumentRecord[] = [
     version: 'v1.0',
     uploadedBy: 'Pankaj Suryawanshi (Executive Admin)',
     uploadedAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
-    url: 'https://buildsmart.ai/storage/permits/municipal-noc.pdf',
-    roleVisibility: ['ADMIN', 'ENGINEER'],
-    tags: ['Compliance', 'Fire Safety', 'Govt Approved'],
+    url: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1200&q=80',
+    roleVisibility: ['ADMIN', 'ENGINEER', 'CONTRACTOR', 'CUSTOMER'],
+    tags: ['Planning', 'Compliance', 'Fire Safety', 'Govt Approved'],
     history: [
       { version: 'v1.0', date: '15 days ago', changedBy: 'Pankaj Suryawanshi', note: 'Final approved sanction from Local Town Planning.' },
     ],
@@ -66,6 +69,7 @@ let documentsStore: DocumentRecord[] = [
   {
     id: 'doc-103',
     projectId: 'seed-project-1',
+    phaseName: 'Superstructure & Masonry',
     title: 'Civil Contractor Master Service Agreement (MSA)',
     category: 'CONTRACTS',
     fileName: 'MSA_Civil_Contractor_Executed.pdf',
@@ -73,9 +77,9 @@ let documentsStore: DocumentRecord[] = [
     version: 'v2.1',
     uploadedBy: 'Sarah Connor (Senior PM)',
     uploadedAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
-    url: 'https://buildsmart.ai/storage/contracts/msa-civil.pdf',
-    roleVisibility: ['ADMIN', 'ENGINEER', 'CONTRACTOR'],
-    tags: ['Legal', 'Milestone Linked', 'Signed'],
+    url: 'https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&w=1200&q=80',
+    roleVisibility: ['ADMIN', 'ENGINEER', 'CONTRACTOR', 'CUSTOMER'],
+    tags: ['Legal', 'Superstructure & Masonry', 'Milestone Linked', 'Signed'],
     history: [
       { version: 'v2.1', date: '20 days ago', changedBy: 'Sarah Connor', note: 'Added penalty clause for delayed aggregate supply.' },
     ],
@@ -83,6 +87,7 @@ let documentsStore: DocumentRecord[] = [
   {
     id: 'doc-104',
     projectId: 'seed-project-1',
+    phaseName: 'Substructure & Foundation',
     title: 'UltraTech Cement Batch 45 Tax Invoice & Delivery Challan',
     category: 'BILLS',
     fileName: 'Invoice_UltraTech_500Bags_Oct.pdf',
@@ -90,9 +95,9 @@ let documentsStore: DocumentRecord[] = [
     version: 'v1.0',
     uploadedBy: 'Site Engineer (Field Operations)',
     uploadedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    url: 'https://buildsmart.ai/storage/bills/ultratech-inv-45.pdf',
+    url: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=1200&q=80',
     roleVisibility: ['ADMIN', 'ENGINEER', 'CONTRACTOR', 'CUSTOMER'],
-    tags: ['Material', 'Cement', 'GST Paid', 'Verified On-Site'],
+    tags: ['Substructure & Foundation', 'Material', 'Cement', 'GST Paid', 'Verified On-Site'],
     history: [
       { version: 'v1.0', date: '3 days ago', changedBy: 'Site Engineer', note: 'Uploaded with physical weighbridge slip.' },
     ],
@@ -100,6 +105,7 @@ let documentsStore: DocumentRecord[] = [
   {
     id: 'doc-105',
     projectId: 'seed-project-2',
+    phaseName: 'Electrical Work',
     title: 'MEP Electrical Single Line Diagram (SLD)',
     category: 'PLANS',
     fileName: 'MEP_Electrical_SLD_Phase2.dwg.pdf',
@@ -107,9 +113,9 @@ let documentsStore: DocumentRecord[] = [
     version: 'v2.0',
     uploadedBy: 'Site Engineer (Field Operations)',
     uploadedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    url: 'https://buildsmart.ai/storage/plans/mep-sld-v2.pdf',
-    roleVisibility: ['ADMIN', 'ENGINEER', 'CONTRACTOR'],
-    tags: ['MEP', 'Electrical', 'Phase 2'],
+    url: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=1200&q=80',
+    roleVisibility: ['ADMIN', 'ENGINEER', 'CONTRACTOR', 'CUSTOMER'],
+    tags: ['MEP', 'Electrical Work', 'Electrical', 'Phase 2'],
     history: [
       { version: 'v2.0', date: '5 days ago', changedBy: 'Site Engineer', note: 'Transformer capacity upgrade from 250kVA to 315kVA.' },
     ],
@@ -124,10 +130,11 @@ export async function GET(req: Request) {
     const category = searchParams.get('category');
     const search = searchParams.get('search')?.toLowerCase();
 
-    // Dynamically assign actual project IDs from database if documents are unbound
+    const targetProjectId = (auth.isClient ? (auth.projectId || projectId) : projectId) || undefined;
+
+    // Dynamically assign or generate actual project documents from database if needed
     const dbProjects = await prisma.project.findMany({ select: { id: true, name: true, userId: true } });
     if (dbProjects.length > 0) {
-      const defaultId = dbProjects[0].id;
       documentsStore.forEach((doc, idx) => {
         if (doc.projectId.startsWith('seed-')) {
           const target = dbProjects[idx % dbProjects.length];
@@ -135,17 +142,198 @@ export async function GET(req: Request) {
           doc.projectName = target.name;
         }
       });
+
+      // If a specific project was requested and has no documents yet, auto-seed standard phase documents
+      const activeProjId = targetProjectId && targetProjectId !== 'all' ? targetProjectId : dbProjects[0].id;
+      if (activeProjId && !documentsStore.some(d => d.projectId === activeProjId)) {
+        const proj = dbProjects.find(p => p.id === activeProjId);
+        const projName = proj?.name || 'Site Project';
+
+        const phaseSeedDocs: DocumentRecord[] = [
+          {
+            id: `doc-${activeProjId}-1`,
+            projectId: activeProjId,
+            projectName: projName,
+            phaseName: 'Planning',
+            title: 'Architectural Master Plan & Elevation Blueprint',
+            category: 'PLANS',
+            fileName: 'Architectural_Master_Elevation.pdf',
+            fileSize: '14.2 MB',
+            version: 'v2.1',
+            uploadedBy: 'Site Engineer (Field Operations)',
+            uploadedAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
+            url: 'https://images.unsplash.com/photo-1541888946425-d0fbb18f15f6?auto=format&fit=crop&w=1200&q=80',
+            roleVisibility: ['ADMIN', 'ENGINEER', 'CONTRACTOR', 'CUSTOMER'],
+            tags: ['Planning', 'Architectural', 'Blueprint', 'Approved'],
+            history: [{ version: 'v2.1', date: '6 days ago', changedBy: 'Site Engineer', note: 'Master plan architectural drawing.' }],
+          },
+          {
+            id: `doc-${activeProjId}-2`,
+            projectId: activeProjId,
+            projectName: projName,
+            phaseName: 'Planning',
+            title: 'Town Planning Municipal Clearance & NOC',
+            category: 'PERMITS',
+            fileName: 'Municipal_NOC_Permit.pdf',
+            fileSize: '3.4 MB',
+            version: 'v1.0',
+            uploadedBy: 'Executive Admin',
+            uploadedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+            url: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1200&q=80',
+            roleVisibility: ['ADMIN', 'ENGINEER', 'CONTRACTOR', 'CUSTOMER'],
+            tags: ['Planning', 'Permits', 'Sanction', 'Government Approved'],
+            history: [{ version: 'v1.0', date: '10 days ago', changedBy: 'Executive Admin', note: 'Town planning sanction issued.' }],
+          },
+          {
+            id: `doc-${activeProjId}-3`,
+            projectId: activeProjId,
+            projectName: projName,
+            phaseName: 'Substructure & Foundation',
+            title: 'Geotechnical Soil Investigation & Foundation Plan',
+            category: 'PLANS',
+            fileName: 'Soil_Investigation_Foundation_Slab.pdf',
+            fileSize: '9.1 MB',
+            version: 'v1.4',
+            uploadedBy: 'Site Engineer (Field Operations)',
+            uploadedAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
+            url: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=1200&q=80',
+            roleVisibility: ['ADMIN', 'ENGINEER', 'CONTRACTOR', 'CUSTOMER'],
+            tags: ['Substructure & Foundation', 'Soil Test', 'Footing', 'PCC'],
+            history: [{ version: 'v1.4', date: '8 days ago', changedBy: 'Site Engineer', note: 'Footing depth calculated per Safe Bearing Capacity (SBC).' }],
+          },
+          {
+            id: `doc-${activeProjId}-4`,
+            projectId: activeProjId,
+            projectName: projName,
+            phaseName: 'Superstructure & Masonry',
+            title: 'Structural Slab & Column Reinforcement Details',
+            category: 'PLANS',
+            fileName: 'Structural_RCC_Reinforcement_Details.pdf',
+            fileSize: '16.5 MB',
+            version: 'v3.0',
+            uploadedBy: 'Site Engineer (Field Operations)',
+            uploadedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
+            url: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&w=1200&q=80',
+            roleVisibility: ['ADMIN', 'ENGINEER', 'CONTRACTOR', 'CUSTOMER'],
+            tags: ['Superstructure & Masonry', 'RCC', 'Columns', 'Structural'],
+            history: [{ version: 'v3.0', date: '4 days ago', changedBy: 'Site Engineer', note: 'TMT steel bar spacing and lap lengths audited.' }],
+          },
+          {
+            id: `doc-${activeProjId}-5`,
+            projectId: activeProjId,
+            projectName: projName,
+            phaseName: 'Superstructure & Masonry',
+            title: 'Civil Contractor Master Service Agreement (MSA)',
+            category: 'CONTRACTS',
+            fileName: 'Civil_Contractor_Executed_MSA.pdf',
+            fileSize: '5.2 MB',
+            version: 'v1.0',
+            uploadedBy: 'Executive Admin',
+            uploadedAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
+            url: 'https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&w=1200&q=80',
+            roleVisibility: ['ADMIN', 'ENGINEER', 'CONTRACTOR', 'CUSTOMER'],
+            tags: ['Contracts', 'Superstructure & Masonry', 'Legal', 'Signed Agreement'],
+            history: [{ version: 'v1.0', date: '14 days ago', changedBy: 'Executive Admin', note: 'Executed milestone-linked agreement.' }],
+          },
+          {
+            id: `doc-${activeProjId}-6`,
+            projectId: activeProjId,
+            projectName: projName,
+            phaseName: 'Plumbing Work',
+            title: 'Water Supply Lines & Sanitary Drainage Schematic',
+            category: 'PLANS',
+            fileName: 'Plumbing_Drainage_Schematic.pdf',
+            fileSize: '6.8 MB',
+            version: 'v1.2',
+            uploadedBy: 'Site Engineer (Field Operations)',
+            uploadedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+            url: 'https://images.unsplash.com/photo-1585704032915-c3400ca199e7?auto=format&fit=crop&w=1200&q=80',
+            roleVisibility: ['ADMIN', 'ENGINEER', 'CONTRACTOR', 'CUSTOMER'],
+            tags: ['Plumbing Work', 'Plumbing', 'Water Supply', 'Drainage'],
+            history: [{ version: 'v1.2', date: '3 days ago', changedBy: 'Site Engineer', note: 'Hydrostatic pressure testing protocol.' }],
+          },
+          {
+            id: `doc-${activeProjId}-7`,
+            projectId: activeProjId,
+            projectName: projName,
+            phaseName: 'Electrical Work',
+            title: 'MEP Electrical Single Line Diagram & DB Schedule',
+            category: 'PLANS',
+            fileName: 'MEP_Electrical_Single_Line_Diagram.pdf',
+            fileSize: '8.4 MB',
+            version: 'v2.0',
+            uploadedBy: 'Site Engineer (Field Operations)',
+            uploadedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+            url: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=1200&q=80',
+            roleVisibility: ['ADMIN', 'ENGINEER', 'CONTRACTOR', 'CUSTOMER'],
+            tags: ['Electrical Work', 'MEP', 'Distribution', 'Schematic'],
+            history: [{ version: 'v2.0', date: '2 days ago', changedBy: 'Site Engineer', note: 'Sub-circuit balance and earth pit schematics.' }],
+          },
+          {
+            id: `doc-${activeProjId}-8`,
+            projectId: activeProjId,
+            projectName: projName,
+            phaseName: 'Paint & Finishing Work',
+            title: 'Exterior & Interior Paint Specification & Surface Prep Schedule',
+            category: 'PLANS',
+            fileName: 'Paint_Finishing_Specs_Schedule.pdf',
+            fileSize: '4.6 MB',
+            version: 'v1.1',
+            uploadedBy: 'Site Engineer (Field Operations)',
+            uploadedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+            url: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=1200&q=80',
+            roleVisibility: ['ADMIN', 'ENGINEER', 'CONTRACTOR', 'CUSTOMER'],
+            tags: ['Paint & Finishing Work', 'Putty', 'Primer', 'Asian Paints Apex Ultima'],
+            history: [{ version: 'v1.1', date: 'Yesterday', changedBy: 'Site Engineer', note: 'Approved paint shade codes and two-coat primer schedule.' }],
+          },
+          {
+            id: `doc-${activeProjId}-9`,
+            projectId: activeProjId,
+            projectName: projName,
+            phaseName: 'Interior & Woodwork',
+            title: 'Interior Joinery, Millwork & False Ceiling Detail Drawings',
+            category: 'PLANS',
+            fileName: 'Interior_Joinery_Ceiling_Drawings.pdf',
+            fileSize: '11.3 MB',
+            version: 'v2.0',
+            uploadedBy: 'Site Engineer (Field Operations)',
+            uploadedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+            url: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=1200&q=80',
+            roleVisibility: ['ADMIN', 'ENGINEER', 'CONTRACTOR', 'CUSTOMER'],
+            tags: ['Interior & Woodwork', 'Joinery', 'False Ceiling', 'Gypsum'],
+            history: [{ version: 'v2.0', date: 'Yesterday', changedBy: 'Site Engineer', note: 'Teak wood door frames and modular wardrobe structural drawings.' }],
+          },
+          {
+            id: `doc-${activeProjId}-10`,
+            projectId: activeProjId,
+            projectName: projName,
+            phaseName: 'Handover & Commissioning',
+            title: 'Final Quality & Structural Fitness Certification',
+            category: 'PERMITS',
+            fileName: 'Final_Inspection_Certification_NOC.pdf',
+            fileSize: '2.8 MB',
+            version: 'v1.0',
+            uploadedBy: 'Executive Admin',
+            uploadedAt: new Date().toISOString(),
+            url: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1200&q=80',
+            roleVisibility: ['ADMIN', 'ENGINEER', 'CONTRACTOR', 'CUSTOMER'],
+            tags: ['Handover & Commissioning', 'Certificate', 'Fitness NOC', 'Quality Clearance'],
+            history: [{ version: 'v1.0', date: 'Today', changedBy: 'Executive Admin', note: 'Quality audit clearance for client handover.' }],
+          },
+        ];
+        documentsStore.push(...phaseSeedDocs);
+      }
     }
 
     let filtered = documentsStore;
 
-    // Isolate documents if client
-    if (auth.isClient && auth.userId) {
-      const clientProjIds = new Set(dbProjects.filter(p => p.userId === auth.userId).map(p => p.id));
-      filtered = filtered.filter(doc => clientProjIds.has(doc.projectId));
-    }
-
-    if (projectId && projectId !== 'all') {
+    // Strict Client Isolation
+    if (auth.isClient) {
+      if (targetProjectId) {
+        filtered = filtered.filter(doc => doc.projectId === targetProjectId);
+      }
+      filtered = filtered.filter(doc => doc.roleVisibility.includes('CUSTOMER'));
+    } else if (projectId && projectId !== 'all') {
       filtered = filtered.filter(doc => doc.projectId === projectId);
     }
 
@@ -180,6 +368,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const {
       projectId,
+      phaseName = 'Planning',
       title,
       category = 'PLANS',
       fileName,
@@ -207,6 +396,7 @@ export async function POST(req: Request) {
       id: `doc-${Date.now()}`,
       projectId,
       projectName: project?.name || 'Active Project',
+      phaseName: phaseName,
       title: title.trim(),
       category: category.toUpperCase() as any,
       fileName: fileName.trim(),

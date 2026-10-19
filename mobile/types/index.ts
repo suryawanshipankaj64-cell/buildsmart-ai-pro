@@ -114,6 +114,7 @@ export interface DocumentRecord {
   id: string;
   projectId: string;
   projectName?: string;
+  phaseName?: string;
   title: string;
   category: DocumentCategory;
   fileName: string;

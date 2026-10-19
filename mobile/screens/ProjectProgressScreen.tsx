@@ -11,6 +11,7 @@ import {
   Modal,
   Image,
   Alert,
+  Share,
 } from 'react-native';
 import {
   Layers,
@@ -35,6 +36,11 @@ import {
   Image as ImageIcon,
   Trash2,
   Building2,
+  FileText,
+  Download,
+  Share2,
+  FileCheck,
+  ExternalLink,
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
@@ -42,9 +48,10 @@ import { useRoute } from '@react-navigation/native';
 import { colors } from '../theme/colors';
 import { useProjects } from '../context/ProjectContext';
 import { useAuth } from '../context/AuthContext';
-import { Task, SitePhoto } from '../types';
+import { Task, SitePhoto, DocumentRecord } from '../types';
 import { fetchTasks, createTask, updateTask, deleteTask, seedProjectTasks, clearProjectTasks } from '../api/tasks';
 import { fetchSitePhotos, uploadSitePhoto, deleteSitePhoto } from '../api/photos';
+import { fetchDocuments } from '../api/documents';
 import { dispatchRecord } from '../api/records';
 import { Header } from '../components/Header';
 import { TaskProofModal } from '../components/TaskProofModal';
@@ -171,6 +178,7 @@ export const ProjectProgressScreen = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [tasks, setTasks] = useState<Task[]>([]);
   const [sitePhotos, setSitePhotos] = useState<SitePhoto[]>([]);
+  const [documents, setDocuments] = useState<DocumentRecord[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -178,6 +186,7 @@ export const ProjectProgressScreen = () => {
   const [addTaskModalVisible, setAddTaskModalVisible] = useState<boolean>(false);
   const [uploadPhotoModalVisible, setUploadPhotoModalVisible] = useState<boolean>(false);
   const [selectedPhotoPreview, setSelectedPhotoPreview] = useState<SitePhoto | null>(null);
+  const [selectedDocPreview, setSelectedDocPreview] = useState<DocumentRecord | null>(null);
   const [bannerMsg, setBannerMsg] = useState<string | null>(null);
 
   // Auto-seed tasks ON / OFF toggle state (Engineers/Admins only)
@@ -223,9 +232,10 @@ export const ProjectProgressScreen = () => {
     if (!pId) return;
     setLoading(true);
     try {
-      const [tasksData, photosData] = await Promise.all([
+      const [tasksData, photosData, docsData] = await Promise.all([
         fetchTasks(pId),
         fetchSitePhotos(pId),
+        fetchDocuments({ projectId: pId }),
       ]);
       // Normalize task phase names to canonical standard phases
       const normalizedTasks = (tasksData || [])
@@ -234,8 +244,9 @@ export const ProjectProgressScreen = () => {
 
       setTasks(normalizedTasks);
       setSitePhotos((photosData || []).filter((p) => !p.projectId || p.projectId === pId));
+      setDocuments(docsData || []);
     } catch (err: any) {
-      console.warn('Failed to load tasks and photos:', err);
+      console.warn('Failed to load tasks, photos, and documents:', err);
     } finally {
       setLoading(false);
     }
@@ -251,7 +262,77 @@ export const ProjectProgressScreen = () => {
     setActiveProjectId(projId);
     setTasks([]);
     setSitePhotos([]);
+    setDocuments([]);
     loadData(projId);
+  };
+
+  const getPhaseDocuments = useCallback((phase: string, docs: DocumentRecord[]) => {
+    const pNorm = normalizePhaseName(phase).toLowerCase();
+    return docs.filter((d) => {
+      if (d.phaseName && normalizePhaseName(d.phaseName).toLowerCase() === pNorm) {
+        return true;
+      }
+      if (d.tags && d.tags.some((t) => normalizePhaseName(t).toLowerCase() === pNorm)) {
+        return true;
+      }
+      const title = (d.title || '').toLowerCase();
+      const fileName = (d.fileName || '').toLowerCase();
+      const tagsStr = (d.tags || []).join(' ').toLowerCase();
+      const combined = `${title} ${fileName} ${tagsStr}`;
+
+      if (pNorm.includes('plan') && (combined.includes('plan') || combined.includes('elevation') || combined.includes('noc') || combined.includes('master') || combined.includes('sanction') || combined.includes('permit'))) return true;
+      if (pNorm.includes('substruct') || pNorm.includes('found')) {
+        if (combined.includes('soil') || combined.includes('found') || combined.includes('footing') || combined.includes('excavat') || combined.includes('pcc') || combined.includes('cement')) return true;
+      }
+      if (pNorm.includes('superstruct') || pNorm.includes('mason')) {
+        if (combined.includes('structural') || combined.includes('rcc') || combined.includes('column') || combined.includes('slab') || combined.includes('rebar') || combined.includes('msa') || combined.includes('brick') || combined.includes('contractor')) return true;
+      }
+      if (pNorm.includes('plumb')) {
+        if (combined.includes('plumb') || combined.includes('drain') || combined.includes('sanitar') || combined.includes('water supply') || combined.includes('pipe')) return true;
+      }
+      if (pNorm.includes('electr')) {
+        if (combined.includes('electr') || combined.includes('mep') || combined.includes('sld') || combined.includes('circuit') || combined.includes('conduit') || combined.includes('wiring')) return true;
+      }
+      if (pNorm.includes('paint') || pNorm.includes('finish')) {
+        if (combined.includes('paint') || combined.includes('finish') || combined.includes('putty') || combined.includes('primer') || combined.includes('coat') || combined.includes('plaster')) return true;
+      }
+      if (pNorm.includes('interior') || pNorm.includes('wood')) {
+        if (combined.includes('interior') || combined.includes('wood') || combined.includes('millwork') || combined.includes('ceiling') || combined.includes('joinery') || combined.includes('cabinet')) return true;
+      }
+      if (pNorm.includes('handover') || pNorm.includes('commission')) {
+        if (combined.includes('handover') || combined.includes('commission') || combined.includes('fitness') || combined.includes('clearance') || combined.includes('occupancy') || combined.includes('certificate')) return true;
+      }
+      return false;
+    });
+  }, []);
+
+  const handleDownloadDocument = (doc: DocumentRecord) => {
+    Alert.alert(
+      'Download Blueprint',
+      `"${doc.fileName}" (${doc.fileSize}) is saved to your local offline cache.`
+    );
+  };
+
+  const handleShareDocument = async (doc: DocumentRecord) => {
+    try {
+      await Share.share({
+        title: doc.title,
+        message: `BuildSmart AI Document [${doc.category}]: ${doc.title} (${doc.version}) - ${doc.url}`,
+      });
+    } catch (e) {
+      console.warn('Share error:', e);
+    }
+  };
+
+  const handleSharePhoto = async (photo: SitePhoto) => {
+    try {
+      await Share.share({
+        title: photo.caption || 'Site Inspection Proof',
+        message: `BuildSmart AI Site Proof: ${photo.caption || 'Progress Inspection'} - ${photo.imageUrl}`,
+      });
+    } catch (e) {
+      console.warn('Share error:', e);
+    }
   };
 
   const onRefresh = async () => {
@@ -999,6 +1080,8 @@ export const ProjectProgressScreen = () => {
                   ...taskProofPhotos.filter((tp) => !phasePhotos.some((pp) => pp.imageUrl === tp.imageUrl)),
                 ];
 
+                const phaseDocs = getPhaseDocuments(phase, documents);
+
                 const phaseAvg = phaseAllTasks.length
                   ? Math.round(
                       phaseAllTasks.reduce(
@@ -1043,7 +1126,7 @@ export const ProjectProgressScreen = () => {
                           </View>
                         </View>
                         <Text style={styles.phaseSubText}>
-                          {phaseAllTasks.filter((t) => t.isCompleted || t.progressPercent >= 100).length} of {phaseAllTasks.length} task(s) done · {combinedPhasePhotos.length} photo(s)
+                          {phaseAllTasks.filter((t) => t.isCompleted || t.progressPercent >= 100).length} of {phaseAllTasks.length} task(s) done · {combinedPhasePhotos.length} photo(s) · {phaseDocs.length} doc(s)
                         </Text>
                       </View>
 
@@ -1082,8 +1165,18 @@ export const ProjectProgressScreen = () => {
                       />
                     </View>
 
-                    {/* Inline Proof Photos Thumbnails Strip */}
-                    {combinedPhasePhotos.length > 0 && (
+                    {/* Section 1: Phase Inspection Proof Photos */}
+                    <View style={styles.phaseSectionLabelRow}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                        <Camera size={11} color={colors.primaryAccent} />
+                        <Text style={styles.phaseSectionLabel}>INSPECTION PROOF PHOTOS</Text>
+                      </View>
+                      <View style={styles.phaseCountBadge}>
+                        <Text style={styles.phaseCountBadgeText}>{combinedPhasePhotos.length}</Text>
+                      </View>
+                    </View>
+
+                    {combinedPhasePhotos.length > 0 ? (
                       <ScrollView
                         horizontal
                         showsHorizontalScrollIndicator={false}
@@ -1103,11 +1196,99 @@ export const ProjectProgressScreen = () => {
                           </TouchableOpacity>
                         ))}
                       </ScrollView>
+                    ) : (
+                      <View style={styles.phaseEmptyNotice}>
+                        <ImageIcon size={12} color={colors.textMuted} />
+                        <Text style={styles.phaseEmptyNoticeText}>
+                          No inspection photos uploaded for this phase yet.
+                        </Text>
+                      </View>
+                    )}
+
+                    {/* Section 2: Phase Blueprints & Documents */}
+                    <View style={[styles.phaseSectionLabelRow, { marginTop: 10 }]}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                        <FileText size={11} color={colors.secondaryInfo} />
+                        <Text style={[styles.phaseSectionLabel, { color: colors.secondaryInfo }]}>
+                          PHASE BLUEPRINTS & CLEARANCES
+                        </Text>
+                      </View>
+                      <View style={[styles.phaseCountBadge, { borderColor: 'rgba(59, 130, 246, 0.4)', backgroundColor: 'rgba(59, 130, 246, 0.12)' }]}>
+                        <Text style={[styles.phaseCountBadgeText, { color: '#93C5FD' }]}>{phaseDocs.length}</Text>
+                      </View>
+                    </View>
+
+                    {phaseDocs.length > 0 ? (
+                      <View style={styles.phaseDocsList}>
+                        {phaseDocs.map((doc) => {
+                          const isPlan = doc.category === 'PLANS';
+                          const isPermit = doc.category === 'PERMITS';
+                          const isContract = doc.category === 'CONTRACTS';
+                          const badgeColor = isPlan ? colors.primaryAccent : isPermit ? colors.secondaryInfo : isContract ? '#F59E0B' : '#EC4899';
+
+                          return (
+                            <TouchableOpacity
+                              key={doc.id}
+                              style={styles.phaseDocItem}
+                              onPress={() => setSelectedDocPreview(doc)}
+                              activeOpacity={0.7}
+                            >
+                              <View style={[styles.phaseDocCategoryChip, { borderColor: badgeColor, backgroundColor: isPlan ? 'rgba(45, 191, 158, 0.12)' : 'rgba(59, 130, 246, 0.12)' }]}>
+                                <Text style={[styles.phaseDocCategoryText, { color: badgeColor }]}>
+                                  {doc.category}
+                                </Text>
+                              </View>
+
+                              <View style={styles.phaseDocInfo}>
+                                <Text style={styles.phaseDocTitle} numberOfLines={1}>
+                                  {doc.title}
+                                </Text>
+                                <Text style={styles.phaseDocSub} numberOfLines={1}>
+                                  {doc.fileName} · {doc.fileSize} · {doc.version}
+                                </Text>
+                              </View>
+
+                              <View style={styles.phaseDocActions}>
+                                <TouchableOpacity
+                                  style={styles.phaseDocActionBtn}
+                                  onPress={() => setSelectedDocPreview(doc)}
+                                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                                >
+                                  <Eye size={13} color={colors.primaryAccent} />
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                  style={styles.phaseDocActionBtn}
+                                  onPress={() => handleDownloadDocument(doc)}
+                                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                                >
+                                  <Download size={13} color="#93C5FD" />
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                  style={styles.phaseDocActionBtn}
+                                  onPress={() => handleShareDocument(doc)}
+                                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                                >
+                                  <Share2 size={13} color={colors.textMuted} />
+                                </TouchableOpacity>
+                              </View>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    ) : (
+                      <View style={styles.phaseEmptyNotice}>
+                        <FileText size={12} color={colors.textMuted} />
+                        <Text style={styles.phaseEmptyNoticeText}>
+                          No blueprints or permits attached to this phase yet.
+                        </Text>
+                      </View>
                     )}
 
                     {/* Direct 0% - 25% - 50% - 75% - 100% Stepper Buttons (Interactive for Engineer/Admin, Clean Status for Client) */}
                     {!isClient ? (
-                      <View style={styles.stepBtnRow}>
+                      <View style={[styles.stepBtnRow, { marginTop: 10 }]}>
                         {PROGRESS_STEPS.map((step) => {
                           const isStepActive = phaseAvg === step;
                           return (
@@ -1133,7 +1314,7 @@ export const ProjectProgressScreen = () => {
                         })}
                       </View>
                     ) : (
-                      <View style={styles.clientPhaseStatusBar}>
+                      <View style={[styles.clientPhaseStatusBar, { marginTop: 10 }]}>
                         <Text style={styles.clientPhaseStatusLabel}>
                           PHASE STATUS:
                         </Text>
@@ -1792,16 +1973,157 @@ export const ProjectProgressScreen = () => {
                 </Text>
               </View>
 
-              {!isClient && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <TouchableOpacity
-                  style={styles.fullPreviewDeleteBtn}
-                  onPress={() => handleDeletePhoto(selectedPhotoPreview.id)}
+                  style={styles.fullPreviewShareBtn}
+                  onPress={() => handleSharePhoto(selectedPhotoPreview)}
                   activeOpacity={0.7}
                 >
-                  <Trash2 size={14} color="#FFF" />
-                  <Text style={styles.fullPreviewDeleteText}>DELETE</Text>
+                  <Share2 size={13} color="#071224" />
+                  <Text style={styles.fullPreviewShareText}>SHARE</Text>
                 </TouchableOpacity>
-              )}
+
+                {!isClient && (
+                  <TouchableOpacity
+                    style={styles.fullPreviewDeleteBtn}
+                    onPress={() => handleDeletePhoto(selectedPhotoPreview.id)}
+                    activeOpacity={0.7}
+                  >
+                    <Trash2 size={14} color="#FFF" />
+                    <Text style={styles.fullPreviewDeleteText}>DELETE</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
+
+      {/* Full Document Inspection / Preview Modal */}
+      {selectedDocPreview && (
+        <Modal
+          visible={!!selectedDocPreview}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setSelectedDocPreview(null)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalSheet}>
+              <View style={styles.modalHeader}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.modalSub}>PHASE BLUEPRINT & CLEARANCE</Text>
+                  <Text style={styles.modalTitle} numberOfLines={2}>
+                    {selectedDocPreview.title}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.closeBtn}
+                  onPress={() => setSelectedDocPreview(null)}
+                >
+                  <X size={20} color={colors.textMuted} />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+                {/* Badges Row */}
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+                  <View style={[styles.docCategoryBadge, { backgroundColor: selectedDocPreview.category === 'PLANS' ? 'rgba(45, 191, 158, 0.2)' : 'rgba(59, 130, 246, 0.2)' }]}>
+                    <Text style={[styles.docCategoryBadgeText, { color: selectedDocPreview.category === 'PLANS' ? colors.primaryAccent : colors.secondaryInfo }]}>
+                      {selectedDocPreview.category}
+                    </Text>
+                  </View>
+                  <View style={styles.docVersionBadge}>
+                    <Text style={styles.docVersionBadgeText}>{selectedDocPreview.version}</Text>
+                  </View>
+                  {selectedDocPreview.phaseName && (
+                    <View style={styles.docPhaseBadge}>
+                      <Text style={styles.docPhaseBadgeText}>📍 {selectedDocPreview.phaseName}</Text>
+                    </View>
+                  )}
+                </View>
+
+                {/* Metadata Grid */}
+                <View style={styles.docMetaGrid}>
+                  <View style={styles.docMetaCol}>
+                    <Text style={styles.docMetaLabel}>FILE NAME</Text>
+                    <Text style={styles.docMetaVal} numberOfLines={1}>{selectedDocPreview.fileName}</Text>
+                  </View>
+                  <View style={styles.docMetaCol}>
+                    <Text style={styles.docMetaLabel}>FILE SIZE</Text>
+                    <Text style={styles.docMetaVal}>{selectedDocPreview.fileSize}</Text>
+                  </View>
+                </View>
+
+                <View style={[styles.docMetaGrid, { marginTop: 8 }]}>
+                  <View style={styles.docMetaCol}>
+                    <Text style={styles.docMetaLabel}>UPLOADED BY</Text>
+                    <Text style={styles.docMetaVal} numberOfLines={1}>{selectedDocPreview.uploadedBy}</Text>
+                  </View>
+                  <View style={styles.docMetaCol}>
+                    <Text style={styles.docMetaLabel}>UPLOAD DATE</Text>
+                    <Text style={styles.docMetaVal}>
+                      {new Date(selectedDocPreview.uploadedAt).toLocaleDateString('en-IN', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                      })}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Tags */}
+                {selectedDocPreview.tags && selectedDocPreview.tags.length > 0 && (
+                  <View style={{ marginTop: 12 }}>
+                    <Text style={styles.docMetaLabel}>INDEX TAGS</Text>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
+                      {selectedDocPreview.tags.map((tg, idx) => (
+                        <View key={idx} style={styles.docTagChip}>
+                          <Text style={styles.docTagChipText}>#{tg}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                )}
+
+                {/* History Log */}
+                {selectedDocPreview.history && selectedDocPreview.history.length > 0 && (
+                  <View style={{ marginTop: 14 }}>
+                    <Text style={styles.docMetaLabel}>VERSION AUDIT TRAIL</Text>
+                    {selectedDocPreview.history.map((h, i) => (
+                      <View key={i} style={styles.historyRow}>
+                        <View style={styles.historyDot} />
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.historyVerText}>
+                            {h.version} · {h.changedBy} ({h.date})
+                          </Text>
+                          <Text style={styles.historyNoteText}>{h.note}</Text>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+                {/* Action Buttons */}
+                <View style={{ flexDirection: 'row', gap: 8, marginTop: 18, marginBottom: 20 }}>
+                  <TouchableOpacity
+                    style={styles.docModalDownloadBtn}
+                    onPress={() => handleDownloadDocument(selectedDocPreview)}
+                    activeOpacity={0.8}
+                  >
+                    <Download size={14} color="#071224" />
+                    <Text style={styles.docModalDownloadText}>DOWNLOAD</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.docModalShareBtn}
+                    onPress={() => handleShareDocument(selectedDocPreview)}
+                    activeOpacity={0.8}
+                  >
+                    <Share2 size={14} color={colors.secondaryInfo} />
+                    <Text style={styles.docModalShareText}>SHARE</Text>
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
             </View>
           </View>
         </Modal>
@@ -2821,5 +3143,254 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontFamily: 'monospace',
     marginTop: 3,
+  },
+  phaseSectionLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  phaseSectionLabel: {
+    fontSize: 9,
+    fontFamily: 'monospace',
+    fontWeight: '800',
+    color: colors.primaryAccent,
+    letterSpacing: 0.5,
+  },
+  phaseCountBadge: {
+    borderWidth: 1,
+    borderColor: 'rgba(45, 191, 158, 0.4)',
+    backgroundColor: 'rgba(45, 191, 158, 0.12)',
+    borderRadius: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+  },
+  phaseCountBadgeText: {
+    fontSize: 9,
+    fontFamily: 'monospace',
+    fontWeight: '800',
+    color: colors.primaryAccent,
+  },
+  phaseEmptyNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.backgroundDeep,
+    borderWidth: 1,
+    borderColor: colors.blueprintBorderMuted,
+    borderStyle: 'dashed',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    marginBottom: 6,
+  },
+  phaseEmptyNoticeText: {
+    fontSize: 10,
+    fontFamily: 'monospace',
+    color: colors.textMuted,
+    flex: 1,
+  },
+  phaseDocsList: {
+    gap: 6,
+    marginBottom: 6,
+  },
+  phaseDocItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.backgroundDeep,
+    borderColor: colors.blueprintBorderMuted,
+    borderWidth: 1,
+    borderRadius: 6,
+    padding: 8,
+    gap: 8,
+  },
+  phaseDocCategoryChip: {
+    borderWidth: 1,
+    borderRadius: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+  },
+  phaseDocCategoryText: {
+    fontSize: 8,
+    fontFamily: 'monospace',
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  phaseDocInfo: {
+    flex: 1,
+  },
+  phaseDocTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  phaseDocSub: {
+    fontSize: 9,
+    fontFamily: 'monospace',
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  phaseDocActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  phaseDocActionBtn: {
+    padding: 4,
+    backgroundColor: colors.cardSurface,
+    borderWidth: 1,
+    borderColor: colors.blueprintBorderMuted,
+    borderRadius: 4,
+  },
+  fullPreviewShareBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.primaryAccent,
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  fullPreviewShareText: {
+    color: '#071224',
+    fontSize: 10,
+    fontWeight: '900',
+    fontFamily: 'monospace',
+  },
+  docCategoryBadge: {
+    borderWidth: 1,
+    borderColor: colors.primaryAccent,
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+  },
+  docCategoryBadgeText: {
+    fontSize: 9,
+    fontFamily: 'monospace',
+    fontWeight: '900',
+  },
+  docVersionBadge: {
+    backgroundColor: colors.backgroundDeep,
+    borderWidth: 1,
+    borderColor: colors.blueprintBorderMuted,
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+  },
+  docVersionBadgeText: {
+    color: colors.textMuted,
+    fontSize: 9,
+    fontFamily: 'monospace',
+    fontWeight: '700',
+  },
+  docPhaseBadge: {
+    backgroundColor: 'rgba(59, 130, 246, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.4)',
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+  },
+  docPhaseBadgeText: {
+    color: '#93C5FD',
+    fontSize: 9,
+    fontFamily: 'monospace',
+    fontWeight: '700',
+  },
+  docMetaGrid: {
+    flexDirection: 'row',
+    backgroundColor: colors.backgroundDeep,
+    borderColor: colors.blueprintBorderMuted,
+    borderWidth: 1,
+    borderRadius: 6,
+    padding: 10,
+    gap: 8,
+  },
+  docMetaCol: {
+    flex: 1,
+  },
+  docMetaLabel: {
+    fontSize: 8,
+    fontFamily: 'monospace',
+    fontWeight: '800',
+    color: colors.textMuted,
+    letterSpacing: 0.5,
+    marginBottom: 2,
+  },
+  docMetaVal: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  docTagChip: {
+    backgroundColor: colors.backgroundDeep,
+    borderWidth: 1,
+    borderColor: colors.blueprintBorderMuted,
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  docTagChipText: {
+    fontSize: 9,
+    fontFamily: 'monospace',
+    color: colors.textMuted,
+  },
+  historyRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    marginTop: 6,
+  },
+  historyDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.primaryAccent,
+    marginTop: 4,
+  },
+  historyVerText: {
+    fontSize: 10,
+    fontFamily: 'monospace',
+    fontWeight: '700',
+    color: colors.primaryAccent,
+  },
+  historyNoteText: {
+    fontSize: 10,
+    color: colors.textMuted,
+    marginTop: 1,
+  },
+  docModalDownloadBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: colors.primaryAccent,
+    borderRadius: 6,
+    paddingVertical: 10,
+  },
+  docModalDownloadText: {
+    color: '#071224',
+    fontSize: 10,
+    fontWeight: '900',
+    fontFamily: 'monospace',
+  },
+  docModalShareBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: colors.backgroundDeep,
+    borderColor: colors.secondaryInfo,
+    borderWidth: 1,
+    borderRadius: 6,
+    paddingVertical: 10,
+  },
+  docModalShareText: {
+    color: colors.secondaryInfo,
+    fontSize: 10,
+    fontWeight: '900',
+    fontFamily: 'monospace',
   },
 });

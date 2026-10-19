@@ -20,6 +20,7 @@ export async function fetchDocuments(options: DocumentFilterOptions = {}): Promi
 
 export interface UploadDocumentPayload {
   projectId: string;
+  phaseName?: string;
   title: string;
   category: DocumentCategory;
   fileName: string;

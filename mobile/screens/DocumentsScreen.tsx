@@ -165,11 +165,15 @@ export const DocumentsScreen = () => {
     <View style={styles.container}>
       <Header
         title="Blueprint & Document Vault"
-        subtitle={`${currentProject?.name || 'Project Documents'} · Version Controlled`}
+        subtitle={
+          isClient
+            ? `Project ID: ${currentProject?.id || 'Assigned'} · Verified Client Document Portal`
+            : `${currentProject?.name || 'Project Documents'} · Version Controlled`
+        }
       />
 
-      {/* Multi-Project Selector Header (If more than 1 project exists) */}
-      {projects.length > 1 && (
+      {/* Multi-Project Selector Header (If more than 1 project exists and not client) */}
+      {!isClient && projects.length > 1 && (
         <View style={styles.projectSelectorBar}>
           <Text style={styles.projectSelectorLabel}>ACTIVE PROJECT:</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
