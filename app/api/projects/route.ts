@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { getRequestAuth } from '@/lib/userAuth';
+import { sanitizePhotoCaptionForMobile } from '@/lib/estimation';
 
 export async function GET(req: Request) {
   try {
@@ -36,13 +37,10 @@ export async function GET(req: Request) {
 
     const sanitizedProjects = projects.map((proj) => ({
       ...proj,
-      sitePhotos: (proj.sitePhotos || []).map((p) => {
-        let cap = p.caption || '';
-        if (cap.startsWith('[Planning]') && /\bwork\b/i.test(cap)) {
-          cap = cap.replace(/\bwork\b/gi, 'site');
-        }
-        return { ...p, caption: cap };
-      }),
+      sitePhotos: (proj.sitePhotos || []).map((p) => ({
+        ...p,
+        caption: sanitizePhotoCaptionForMobile(p.caption),
+      })),
     }));
 
     return NextResponse.json(sanitizedProjects);

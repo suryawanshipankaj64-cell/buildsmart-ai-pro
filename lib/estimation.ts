@@ -84,6 +84,21 @@ export function isPhotoForPhase(
   return detected.toLowerCase() === targetLower;
 }
 
+/**
+ * Sanitizes photo captions so that older mobile app versions that use broad keyword splitting
+ * (e.g. splitting 'Plumbing Work' into ['plumbing', 'work']) do not match photos from other phases
+ * due to common keywords like 'work'.
+ */
+export function sanitizePhotoCaptionForMobile(caption?: string | null): string {
+  if (!caption) return '';
+  let cap = caption.trim();
+  // Strip trailing 'Work' from inside phase bracket tags e.g. [Plumbing Work] -> [Plumbing]
+  cap = cap.replace(/\[([^\]]+?)\s+Work\]/gi, '[$1]');
+  // Replace standalone word 'work' with 'site' across entire caption to prevent regex bleed
+  cap = cap.replace(/\bwork\b/gi, 'site');
+  return cap;
+}
+
 
 export interface AdminRates {
   baseRatePerSqFt: number;

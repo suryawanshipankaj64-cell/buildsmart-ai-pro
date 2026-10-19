@@ -1349,10 +1349,11 @@ function UploadSitePhotoModal({
 
     setLoading(true);
     try {
-      const cleanCaption = caption.replace(/^\s*\[[^\]]+\]\s*/, '').trim();
+      const cleanCaption = caption.replace(/^\s*\[[^\]]+\]\s*/, '').replace(/\bwork\b/gi, 'site').trim();
+      const cleanPhaseTag = phase.replace(/\s+Work$/i, '');
       const formattedCaption = cleanCaption
-        ? `[${phase}] ${cleanCaption}`
-        : `[${phase}] Proof of work inspection`;
+        ? `[${cleanPhaseTag}] ${cleanCaption}`
+        : `[${cleanPhaseTag}] Proof of site inspection`;
 
       await postJson('/api/photos', {
         projectId,

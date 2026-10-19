@@ -180,11 +180,12 @@ export const TaskProofModal: React.FC<TaskProofModalProps> = ({
 
       // Also record site photo proof in gallery asynchronously in background
       if (photoUri && task.projectId) {
-        const canonicalPhase = normalizePhaseName(task.phaseName);
+        const canonicalPhase = normalizePhaseName(task.phaseName).replace(/\s+Work$/i, '');
+        const cleanTitle = task.title.replace(/\bwork\b/gi, 'activity');
         uploadSitePhoto({
           projectId: task.projectId,
           imageUrl: photoUri,
-          caption: `[${canonicalPhase}] Proof: ${task.title} (${progressPercent}%)`,
+          caption: `[${canonicalPhase}] Proof: ${cleanTitle} (${progressPercent}%)`,
           latitude: locationCoords?.lat,
           longitude: locationCoords?.lon,
         }).catch((e) => console.warn('Background site photo upload:', e));

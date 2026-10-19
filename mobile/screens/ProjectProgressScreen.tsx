@@ -740,10 +740,11 @@ export const ProjectProgressScreen = () => {
 
     setIsUploadingPhoto(true);
     try {
-      const cleanCaption = photoCaption.replace(/^\s*\[[^\]]+\]\s*/, '').trim();
+      const cleanCaption = photoCaption.replace(/^\s*\[[^\]]+\]\s*/, '').replace(/\bwork\b/gi, 'site').trim();
+      const cleanPhaseTag = photoPhase.replace(/\s+Work$/i, '');
       const formattedCaption = cleanCaption
-        ? `[${photoPhase}] ${cleanCaption}`
-        : `[${photoPhase}] Proof of work inspection`;
+        ? `[${cleanPhaseTag}] ${cleanCaption}`
+        : `[${cleanPhaseTag}] Proof of site inspection`;
 
       const uploaded = await uploadSitePhoto({
         projectId: selectedProjectId,

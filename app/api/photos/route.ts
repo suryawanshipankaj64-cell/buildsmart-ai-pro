@@ -3,8 +3,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { getRequestAuth } from '@/lib/userAuth';
-
 import { getConstructionFallbackImage } from '@/lib/fallbackImages';
+import { sanitizePhotoCaptionForMobile } from '@/lib/estimation';
 
 export async function GET(req: Request) {
   try {
@@ -32,14 +32,11 @@ export async function GET(req: Request) {
       },
     });
 
-    // Sanitize captions so legacy client-side substring matching cannot bleed Planning photos into other phases
-    const sanitizedPhotos = photos.map((p) => {
-      let cap = p.caption || '';
-      if (cap.startsWith('[Planning]') && /\bwork\b/i.test(cap)) {
-        cap = cap.replace(/\bwork\b/gi, 'site');
-      }
-      return { ...p, caption: cap };
-    });
+    // Sanitize captions so legacy client-side substring matching cannot bleed photos into other phases
+    const sanitizedPhotos = photos.map((p) => ({
+      ...p,
+      caption: sanitizePhotoCaptionForMobile(p.caption),
+    }));
 
     return NextResponse.json(sanitizedPhotos);
   } catch (error: any) {
@@ -87,11 +84,8 @@ export async function POST(req: Request) {
       finalImageUrl = getConstructionFallbackImage(caption || 'Planning', caption || 'Site Inspection Proof');
     }
 
-    // Sanitize caption so generic trade words like 'work' in non-trade phases don't bleed into other phases
-    let sanitizedCaption = caption?.trim() || null;
-    if (sanitizedCaption && sanitizedCaption.startsWith('[Planning]') && /\bwork\b/i.test(sanitizedCaption)) {
-      sanitizedCaption = sanitizedCaption.replace(/\bwork\b/gi, 'site');
-    }
+    // Sanitize caption so generic trade words like 'work' don't bleed into other phases in older mobile builds
+    const sanitizedCaption = caption ? sanitizePhotoCaptionForMobile(caption) : null;
 
     const photo = await prisma.sitePhoto.create({
       data: {
@@ -103,7 +97,10 @@ export async function POST(req: Request) {
       },
     });
 
-    return NextResponse.json(photo, { status: 201 });
+    return NextResponse.json({
+      ...photo,
+      caption: sanitizePhotoCaptionForMobile(photo.caption),
+    }, { status: 201 });
   } catch (error: any) {
     console.error('CREATE_PHOTO_ERROR:', error);
     return NextResponse.json(
