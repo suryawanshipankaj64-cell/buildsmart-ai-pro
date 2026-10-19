@@ -10,14 +10,21 @@ export async function GET(req: Request) {
   try {
     const auth = await getRequestAuth(req);
     const { searchParams } = new URL(req.url);
-    const projectId = searchParams.get('projectId');
+    const queryProjectId = searchParams.get('projectId');
+    const targetProjectId = auth.isClient
+      ? (auth.projectId || queryProjectId)
+      : queryProjectId;
 
     let whereClause: any = {};
-    if (projectId) {
-      whereClause.projectId = projectId;
-    }
-    if (auth.isClient && auth.userId) {
-      whereClause.project = { userId: auth.userId };
+    if (targetProjectId) {
+      whereClause.projectId = targetProjectId;
+    } else if (auth.isClient && auth.userId) {
+      whereClause.project = {
+        OR: [
+          { userId: auth.userId },
+          { clientId: auth.userId },
+        ],
+      };
     }
 
     const photos = await prisma.sitePhoto.findMany({
