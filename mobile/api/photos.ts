@@ -13,6 +13,7 @@ export async function uploadSitePhoto(payload: UploadPhotoPayload): Promise<Site
   return apiClient<SitePhoto>('/photos', {
     method: 'POST',
     body: JSON.stringify(payload),
+    timeoutMs: 60000,
   });
 }
 

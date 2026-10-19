@@ -98,7 +98,8 @@ export const TaskProofModal: React.FC<TaskProofModalProps> = ({
 
       const result = await ImagePicker.launchCameraAsync({
         allowsEditing: true,
-        quality: 0.6,
+        aspect: [4, 3],
+        quality: 0.45,
         base64: true,
       });
 
@@ -114,7 +115,8 @@ export const TaskProofModal: React.FC<TaskProofModalProps> = ({
       try {
         const result = await ImagePicker.launchImageLibraryAsync({
           allowsEditing: true,
-          quality: 0.6,
+          aspect: [4, 3],
+          quality: 0.45,
           base64: true,
         });
         if (!result.canceled && result.assets && result.assets.length > 0) {

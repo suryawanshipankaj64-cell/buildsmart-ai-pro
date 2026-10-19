@@ -87,15 +87,16 @@ export async function getRequestAuth(req: Request): Promise<RequestAuth> {
     emailLower.includes('pankajsuryawanshi') ||
     emailLower.includes('admin@buildsmart.ai');
 
+  const isEngineer = !isAdmin && (rawRole === 'ENGINEER' || rawRole === 'CONTRACTOR' || (!rawRole && !emailLower.includes('client') && !projectId));
+
   const isClient =
     !isAdmin &&
+    !isEngineer &&
     (rawRole === 'CLIENT' ||
       rawRole === 'CUSTOMER' ||
-      rawRole === 'USER' && emailLower.includes('client') ||
+      (rawRole === 'USER' && emailLower.includes('client')) ||
       emailLower.includes('client@buildsmart.ai') ||
       !!projectId);
-
-  const isEngineer = !isAdmin && !isClient;
 
   const role: 'ADMIN' | 'ENGINEER' | 'CLIENT' = isAdmin
     ? 'ADMIN'

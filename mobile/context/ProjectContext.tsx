@@ -82,16 +82,19 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
         }
       }
 
-      setProjects(finalProjects);
-      if (targetProjectId && finalProjects.some((p) => p.id === targetProjectId)) {
-        setActiveProjectIdState(targetProjectId);
-      } else if (finalProjects.length > 0) {
-        setActiveProjectIdState((prev) => (prev && finalProjects.some((p) => p.id === prev) ? prev : finalProjects[0].id));
+      if (finalProjects.length > 0) {
+        setProjects(finalProjects);
+        if (targetProjectId && finalProjects.some((p) => p.id === targetProjectId)) {
+          setActiveProjectIdState(targetProjectId);
+        } else {
+          setActiveProjectIdState((prev) => (prev && finalProjects.some((p) => p.id === prev) ? prev : finalProjects[0].id));
+        }
+        // Save valid projects to local cache
+        await setSecureItem(CACHED_PROJECTS_KEY, JSON.stringify(finalProjects));
       } else {
-        setActiveProjectIdState(null);
+        // If server returned 0 records unexpectedly, preserve existing projects if available
+        setProjects((prev) => (prev.length > 0 ? prev : []));
       }
-      // Save valid projects to local cache
-      await setSecureItem(CACHED_PROJECTS_KEY, JSON.stringify(finalProjects));
     } catch (err: any) {
       if (!err?.isAborted) {
         console.log('[ProjectContext] Load error:', err?.message);

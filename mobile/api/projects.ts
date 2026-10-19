@@ -26,11 +26,11 @@ export async function fetchProjects(userContext?: { userId?: string; email?: str
         };
       });
     }
+    return [];
   } catch (err: any) {
-    console.log('[fetchProjects] Query notice:', err?.message);
+    console.log('[fetchProjects] Network notice:', err?.message);
+    throw err;
   }
-
-  return [];
 }
 
 export async function fetchProjectById(id: string): Promise<Project | null> {

@@ -109,6 +109,8 @@ export async function setStoredHostIp(ip: string): Promise<void> {
 
 export const CLOUD_API_URL = 'https://buildsmart-ai-pro.vercel.app/api';
 
+let isLanUnreachable = false;
+
 export interface ApiRequestOptions extends RequestInit {
   timeoutMs?: number;
   _retried?: boolean;
@@ -120,7 +122,7 @@ export async function apiClient<T = any>(
   endpoint: string,
   options: ApiRequestOptions = {}
 ): Promise<T> {
-  const baseUrl = options._useCloud
+  const baseUrl = options._useCloud || isLanUnreachable
     ? CLOUD_API_URL
     : options._retried
     ? getAutoDetectedHost()
@@ -140,7 +142,9 @@ export async function apiClient<T = any>(
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const timeoutMs = options.timeoutMs ?? 15000;
+  // Use a sensible default timeout (4s for LAN to fail fast if on cellular, 45s for Cloud)
+  const defaultTimeout = (baseUrl === CLOUD_API_URL) ? 45000 : 5000;
+  const timeoutMs = options.timeoutMs ?? defaultTimeout;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => {
     try {
@@ -182,11 +186,15 @@ export async function apiClient<T = any>(
   } catch (error: any) {
     clearTimeout(timeoutId);
 
-    const autoHost = getAutoDetectedHost();
-    if (!options._retried && baseUrl !== autoHost) {
-      return apiClient<T>(endpoint, { ...options, _retried: true });
-    } else if (!options._useCloud && baseUrl !== CLOUD_API_URL) {
-      return apiClient<T>(endpoint, { ...options, _retried: true, _useCloud: true, timeoutMs: 12000 });
+    // If local LAN failed or timed out (e.g. phone is on 5G/4G cellular), switch to Cloud API seamlessly
+    if (baseUrl !== CLOUD_API_URL) {
+      isLanUnreachable = true;
+      return apiClient<T>(endpoint, {
+        ...options,
+        _retried: true,
+        _useCloud: true,
+        timeoutMs: Math.max(options.timeoutMs ?? 45000, 45000),
+      });
     }
 
     if (error.name === 'AbortError' || error?.message?.includes('canceled') || error?.message?.includes('aborted')) {
