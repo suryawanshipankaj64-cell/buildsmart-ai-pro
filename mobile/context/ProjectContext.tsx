@@ -76,9 +76,11 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
       let finalProjects: Project[] = Array.isArray(data) ? data : [];
       if (isClient) {
         if (targetProjectId) {
-          finalProjects = finalProjects.filter((p) => p.id === targetProjectId);
+          const matched = finalProjects.filter((p) => p.id === targetProjectId);
+          if (matched.length > 0) finalProjects = matched;
         } else if (user?.id) {
-          finalProjects = finalProjects.filter((p) => p.userId === user.id || p.clientId === user.id);
+          const matched = finalProjects.filter((p) => p.userId === user.id || p.clientId === user.id);
+          if (matched.length > 0) finalProjects = matched;
         }
       }
 
@@ -96,9 +98,18 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
         setProjects((prev) => (prev.length > 0 ? prev : []));
       }
     } catch (err: any) {
-      if (!err?.isAborted) {
-        console.log('[ProjectContext] Load error:', err?.message);
-      }
+      console.log('[ProjectContext] Load notice:', err?.message);
+      // If error occurs and in-memory projects is empty, attempt recovery from local cache
+      try {
+        const cached = await getSecureItem(CACHED_PROJECTS_KEY);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setProjects((prev) => (prev.length > 0 ? prev : parsed));
+            setActiveProjectIdState((prev) => prev || parsed[0]?.id || null);
+          }
+        }
+      } catch {}
     } finally {
       if (!silent) setIsLoading(false);
     }

@@ -112,7 +112,8 @@ export async function apiClient<T = any>(
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const timeoutMs = options.timeoutMs ?? 20000;
+  // Use 45s default timeout to tolerate serverless cold starts gracefully
+  const timeoutMs = options.timeoutMs ?? 45000;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => {
     try {
@@ -140,6 +141,12 @@ export async function apiClient<T = any>(
     }
 
     if (!response.ok) {
+      if (response.status === 413) {
+        const err = new Error('Photo payload is too large. Please retake photo with optimized resolution.');
+        (err as any).status = 413;
+        throw err;
+      }
+
       const errorMessage =
         data?.error ||
         data?.message ||
@@ -154,8 +161,15 @@ export async function apiClient<T = any>(
   } catch (error: any) {
     clearTimeout(timeoutId);
 
+    // Auto-retry once for GET requests if cold-start timed out or network blipped
+    const isGet = !options.method || options.method.toUpperCase() === 'GET';
+    if (isGet && !options._retried) {
+      await new Promise((r) => setTimeout(r, 1200));
+      return apiClient<T>(endpoint, { ...options, _retried: true, timeoutMs: 60000 });
+    }
+
     if (error.name === 'AbortError' || error?.message?.includes('canceled') || error?.message?.includes('aborted')) {
-      const customErr = new Error(`Request timed out or connection was aborted.`);
+      const customErr = new Error(`Request timed out or connection was aborted. Please check your network connection.`);
       (customErr as any).isAborted = true;
       throw customErr;
     }

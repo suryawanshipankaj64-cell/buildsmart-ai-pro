@@ -41,6 +41,7 @@ import {
   Share2,
   FileCheck,
   ExternalLink,
+  RefreshCw,
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
@@ -259,8 +260,10 @@ export const ProjectProgressScreen = () => {
       setActiveProjectId(route.params.projectId);
     } else if (activeProject?.id && !selectedProjectId) {
       setSelectedProjectId(activeProject.id);
+    } else if (projects.length > 0 && (!selectedProjectId || !projects.some((p) => p.id === selectedProjectId))) {
+      setSelectedProjectId(projects[0].id);
     }
-  }, [route.params?.projectId, activeProject?.id]);
+  }, [route.params?.projectId, activeProject?.id, projects, selectedProjectId]);
 
   const currentProject = projects.find((p) => p.id === selectedProjectId) || activeProject;
 
@@ -678,7 +681,7 @@ export const ProjectProgressScreen = () => {
         const res = await ImagePicker.launchCameraAsync({
           allowsEditing: true,
           aspect: [4, 3],
-          quality: 0.45,
+          quality: 0.2,
           base64: true,
         });
         if (!res.canceled && res.assets && res.assets.length > 0) {
@@ -696,7 +699,7 @@ export const ProjectProgressScreen = () => {
       const res = await ImagePicker.launchImageLibraryAsync({
         allowsEditing: true,
         aspect: [4, 3],
-        quality: 0.45,
+        quality: 0.2,
         base64: true,
       });
       if (!res.canceled && res.assets && res.assets.length > 0) {
@@ -722,11 +725,16 @@ export const ProjectProgressScreen = () => {
 
   const handleUploadPhotoSubmit = async () => {
     if (!selectedProjectId) {
-      Alert.alert('Error', 'No project selected.');
+      Alert.alert('Error', 'No project selected. Please select a project first.');
       return;
     }
     if (!photoUri) {
       Alert.alert('Error', 'Please capture or select a photo.');
+      return;
+    }
+
+    if (photoUri.startsWith('data:') && photoUri.length > 4.2 * 1024 * 1024) {
+      Alert.alert('Photo Too Large', 'Please retake a quick photo with the camera to optimize upload size.');
       return;
     }
 
@@ -896,6 +904,29 @@ export const ProjectProgressScreen = () => {
                 ? 'No project is currently assigned to your client view. Please check with your contractor or admin.'
                 : 'Please create a project from the Dashboard or Web console to start monitoring progress phases and tasks.'}
             </Text>
+
+            <TouchableOpacity
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 8,
+                backgroundColor: colors.primaryAccent,
+                paddingHorizontal: 18,
+                paddingVertical: 10,
+                borderRadius: 8,
+                marginTop: 20,
+              }}
+              onPress={() => {
+                setRefreshing(true);
+                refreshProjects(false).finally(() => setRefreshing(false));
+              }}
+              activeOpacity={0.8}
+            >
+              <RefreshCw size={14} color="#071224" />
+              <Text style={{ fontSize: 12, fontWeight: '800', color: '#071224', fontFamily: 'monospace' }}>
+                SYNC / RECONNECT WITH SERVER
+              </Text>
+            </TouchableOpacity>
           </View>
         ) : (
           <>
