@@ -30,6 +30,20 @@ import { Task } from '../types';
 import { updateTask } from '../api/tasks';
 import { uploadSitePhoto } from '../api/photos';
 
+const normalizePhaseName = (phase?: string | null): string => {
+  if (!phase) return 'Planning';
+  const p = phase.trim().toLowerCase();
+  if (p.includes('plan')) return 'Planning';
+  if (p.includes('found') || p.includes('substruct') || p.includes('excavat') || p.includes('footing') || p.includes('pile')) return 'Substructure & Foundation';
+  if (p.includes('superstruct') || p.includes('rcc') || p.includes('structure') || p.includes('mason') || p.includes('brick') || p.includes('block') || p.includes('slab') || p.includes('column')) return 'Superstructure & Masonry';
+  if (p.includes('plumb') || p.includes('drain') || p.includes('sanitar') || p.includes('pipe')) return 'Plumbing Work';
+  if (p.includes('electr') || p.includes('conduit') || p.includes('wir') || p.includes('switch')) return 'Electrical Work';
+  if (p.includes('paint') || p.includes('finish') || p.includes('plaster') || p.includes('putty') || p.includes('coat')) return 'Paint & Finishing Work';
+  if (p.includes('interior') || p.includes('wood') || p.includes('tile') || p.includes('marble') || p.includes('door') || p.includes('cabinet') || p.includes('ceiling')) return 'Interior & Woodwork';
+  if (p.includes('handover') || p.includes('commission') || p.includes('clean') || p.includes('final')) return 'Handover & Commissioning';
+  return phase.trim();
+};
+
 interface TaskProofModalProps {
   visible: boolean;
   task: Task | null;
@@ -166,10 +180,11 @@ export const TaskProofModal: React.FC<TaskProofModalProps> = ({
 
       // Also record site photo proof in gallery asynchronously in background
       if (photoUri && task.projectId) {
+        const canonicalPhase = normalizePhaseName(task.phaseName);
         uploadSitePhoto({
           projectId: task.projectId,
           imageUrl: photoUri,
-          caption: `[${task.phaseName || 'Planning'}] Proof: ${task.title} (${progressPercent}%)`,
+          caption: `[${canonicalPhase}] Proof: ${task.title} (${progressPercent}%)`,
           latitude: locationCoords?.lat,
           longitude: locationCoords?.lon,
         }).catch((e) => console.warn('Background site photo upload:', e));

@@ -59,10 +59,10 @@ export function extractPhaseFromCaption(caption?: string | null): string | null 
  * Prevents false matches where generic words like 'work' cause a photo to appear across all phases.
  */
 export function isPhotoForPhase(
-  photoOrCaption: { caption?: string | null } | string | null | undefined,
+  photoOrCaption: { caption?: string | null; phase?: string | null } | string | null | undefined,
   targetPhase: string
 ): boolean {
-  const cap = typeof photoOrCaption === 'string' ? photoOrCaption : photoOrCaption?.caption;
+  const cap = typeof photoOrCaption === 'string' ? photoOrCaption : (photoOrCaption?.caption || (photoOrCaption as any)?.phase || '');
   if (!cap) return false;
 
   const targetNormalized = normalizePhaseName(targetPhase);
@@ -74,23 +74,14 @@ export function isPhotoForPhase(
     return taggedPhase.toLowerCase() === targetLower;
   }
 
-  // 2. Exact match of phase name in caption e.g. "[Electrical Work]" or "Electrical Work"
-  const capLower = cap.toLowerCase();
-  if (capLower.includes(`[${targetLower}]`)) return true;
-  if (capLower.includes(targetLower)) return true;
-
-  // 3. Fallback to distinct phase keywords, excluding common construction stopwords
-  const stopWords = new Set(['work', 'phase', 'proof', 'site', 'inspection', 'and', 'the', 'for']);
-  const distinctKeywords = targetLower
-    .split(/[\s&/]+/)
-    .map((w) => w.trim())
-    .filter((w) => w.length > 3 && !stopWords.has(w));
-
-  if (distinctKeywords.length > 0) {
-    return distinctKeywords.some((kw) => capLower.includes(kw));
+  // 2. Direct phase property if present
+  if (photoOrCaption && typeof photoOrCaption === 'object' && (photoOrCaption as any).phase) {
+    return normalizePhaseName((photoOrCaption as any).phase).toLowerCase() === targetLower;
   }
 
-  return false;
+  // 3. Fallback: single normalized phase detection (strictly one canonical phase)
+  const detected = normalizePhaseName(cap);
+  return detected.toLowerCase() === targetLower;
 }
 
 

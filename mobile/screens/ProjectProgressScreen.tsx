@@ -175,10 +175,10 @@ const extractPhaseFromCaption = (caption?: string | null): string | null => {
 
 // Strict, accurate check to ensure photos appear strictly in their designated phase
 const isPhotoForPhase = (
-  photo: { caption?: string | null } | string | null | undefined,
+  photo: { caption?: string | null; phase?: string | null } | string | null | undefined,
   phase: string
 ): boolean => {
-  const cap = typeof photo === 'string' ? photo : photo?.caption;
+  const cap = typeof photo === 'string' ? photo : (photo?.caption || (photo as any)?.phase || '');
   if (!cap) return false;
 
   const normalizedTargetPhase = normalizePhaseName(phase);
@@ -190,23 +190,14 @@ const isPhotoForPhase = (
     return tagged.toLowerCase() === targetLower;
   }
 
-  // 2. Exact match of phase name in caption e.g. "[Electrical Work]" or "Electrical Work"
-  const capLower = cap.toLowerCase();
-  if (capLower.includes(`[${targetLower}]`)) return true;
-  if (capLower.includes(targetLower)) return true;
-
-  // 3. Fallback to distinct phase keywords, excluding common construction stopwords like 'work'
-  const stopWords = new Set(['work', 'phase', 'proof', 'site', 'inspection', 'and', 'the', 'for']);
-  const distinctKeywords = targetLower
-    .split(/[\s&/]+/)
-    .map((w) => w.trim())
-    .filter((w) => w.length > 3 && !stopWords.has(w));
-
-  if (distinctKeywords.length > 0) {
-    return distinctKeywords.some((kw) => capLower.includes(kw));
+  // 2. Direct phase property if present
+  if (photo && typeof photo === 'object' && (photo as any).phase) {
+    return normalizePhaseName((photo as any).phase).toLowerCase() === targetLower;
   }
 
-  return false;
+  // 3. Fallback: single normalized phase detection (strictly one canonical phase)
+  const detected = normalizePhaseName(cap);
+  return detected.toLowerCase() === targetLower;
 };
 
 export const ProjectProgressScreen = () => {
@@ -741,10 +732,15 @@ export const ProjectProgressScreen = () => {
 
     setIsUploadingPhoto(true);
     try {
+      const cleanCaption = photoCaption.replace(/^\s*\[[^\]]+\]\s*/, '').trim();
+      const formattedCaption = cleanCaption
+        ? `[${photoPhase}] ${cleanCaption}`
+        : `[${photoPhase}] Proof of work inspection`;
+
       const uploaded = await uploadSitePhoto({
         projectId: selectedProjectId,
         imageUrl: photoUri,
-        caption: photoCaption.trim() ? `[${photoPhase}] ${photoCaption.trim()}` : `[${photoPhase}] Proof of work inspection`,
+        caption: formattedCaption,
         latitude: photoCoords?.lat,
         longitude: photoCoords?.lon,
       });
@@ -1937,20 +1933,27 @@ export const ProjectProgressScreen = () => {
                   {/* Sample presets for fast testing */}
                   <Text style={[styles.fieldLabel, { marginTop: 4 }]}>OR SELECT QUICK SAMPLE PROOF:</Text>
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
-                    {SAMPLE_PHOTO_PRESETS.map((preset) => (
-                      <TouchableOpacity
-                        key={preset.label}
-                        style={styles.presetSampleBtn}
-                        onPress={() => {
-                          setPhotoUri(preset.url);
-                          setPhotoCaption(preset.caption);
-                          setPhotoPhase(preset.phase);
-                          setPhotoCoords({ lat: 19.076, lon: 72.8777 });
-                        }}
-                      >
-                        <Text style={styles.presetSampleText}>{preset.label}</Text>
-                      </TouchableOpacity>
-                    ))}
+                    {SAMPLE_PHOTO_PRESETS.map((preset) => {
+                      const isPhaseMatch = preset.phase.toLowerCase() === photoPhase.toLowerCase();
+                      return (
+                        <TouchableOpacity
+                          key={preset.label}
+                          style={[
+                            styles.presetSampleBtn,
+                            isPhaseMatch && { borderColor: colors.primaryAccent, backgroundColor: `${colors.primaryAccent}15` },
+                          ]}
+                          onPress={() => {
+                            setPhotoUri(preset.url);
+                            setPhotoCaption(preset.caption.replace(/^\[[^\]]+\]\s*/, ''));
+                            setPhotoCoords({ lat: 19.076, lon: 72.8777 });
+                          }}
+                        >
+                          <Text style={[styles.presetSampleText, isPhaseMatch && { color: colors.primaryAccent, fontWeight: '700' }]}>
+                            {preset.label}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
                   </View>
                 </View>
               )}
