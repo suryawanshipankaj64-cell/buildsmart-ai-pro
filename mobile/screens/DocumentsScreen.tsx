@@ -82,15 +82,15 @@ export const DocumentsScreen = () => {
         search: searchQuery || undefined,
       });
       setDocuments(data);
-      if (data.length > 0 && (!selectedDoc || !data.some((d) => d.id === selectedDoc.id))) {
-        setSelectedDoc(data[0]);
+      if (data.length > 0) {
+        setSelectedDoc((prev) => (prev && data.some((d) => d.id === prev.id) ? prev : data[0]));
       }
     } catch (err: any) {
       console.warn('Failed to load documents:', err);
     } finally {
       setLoading(false);
     }
-  }, [selectedProjectId, selectedCategory, searchQuery, selectedDoc]);
+  }, [selectedProjectId, selectedCategory, searchQuery]);
 
   useEffect(() => {
     loadDocuments(selectedProjectId);

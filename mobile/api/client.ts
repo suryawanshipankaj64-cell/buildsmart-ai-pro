@@ -53,31 +53,29 @@ export async function deleteSecureItem(key: string): Promise<void> {
   }
 }
 
-// Token & Session Storage Helpers
+// Token & Session In-Memory Cache for ultra-fast zero-latency requests
+let memoryToken: string | null = null;
+
 export async function getStoredToken(): Promise<string | null> {
-  return getSecureItem(TOKEN_KEY);
+  if (memoryToken) return memoryToken;
+  memoryToken = await getSecureItem(TOKEN_KEY);
+  return memoryToken;
 }
 
 export async function setStoredToken(token: string): Promise<void> {
+  memoryToken = token;
   return setSecureItem(TOKEN_KEY, token);
 }
 
 export async function clearStoredSession(): Promise<void> {
+  memoryToken = null;
   await deleteSecureItem(TOKEN_KEY);
   await deleteSecureItem(USER_KEY);
 }
 
+export const CLOUD_API_URL = 'https://buildsmart-ai-pro.vercel.app/api';
+
 export async function getStoredHostIp(): Promise<string> {
-  const customHost = await getSecureItem(HOST_IP_KEY);
-  if (customHost && customHost.trim().length > 0) {
-    if (customHost.startsWith('https://')) {
-      return customHost.trim();
-    }
-    if (Platform.OS !== 'web') {
-      return CLOUD_API_URL;
-    }
-    return customHost.trim();
-  }
   return CLOUD_API_URL;
 }
 
@@ -87,26 +85,18 @@ export async function setStoredHostIp(ip: string): Promise<void> {
   await setSecureItem(HOST_IP_KEY, url);
 }
 
-export const CLOUD_API_URL = 'https://buildsmart-ai-pro.vercel.app/api';
-
-let isLanUnreachable = false;
-
 export interface ApiRequestOptions extends RequestInit {
   timeoutMs?: number;
   _retried?: boolean;
   _useCloud?: boolean;
 }
 
-// Main HTTP Client with automatic Bearer token injection and dual LAN/Cloud resilience
+// Main HTTP Client: Direct ultra-fast connection to live Cloud Backend
 export async function apiClient<T = any>(
   endpoint: string,
   options: ApiRequestOptions = {}
 ): Promise<T> {
-  const baseUrl = options._useCloud || isLanUnreachable
-    ? CLOUD_API_URL
-    : options._retried
-    ? getAutoDetectedHost()
-    : await getStoredHostIp();
+  const baseUrl = CLOUD_API_URL;
   const token = await getStoredToken();
 
   const formattedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
@@ -122,9 +112,7 @@ export async function apiClient<T = any>(
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  // Use a sensible default timeout (4s for LAN to fail fast if on cellular, 45s for Cloud)
-  const defaultTimeout = (baseUrl === CLOUD_API_URL) ? 45000 : 5000;
-  const timeoutMs = options.timeoutMs ?? defaultTimeout;
+  const timeoutMs = options.timeoutMs ?? 20000;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => {
     try {
@@ -165,17 +153,6 @@ export async function apiClient<T = any>(
     return data as T;
   } catch (error: any) {
     clearTimeout(timeoutId);
-
-    // If local LAN failed or timed out (e.g. phone is on 5G/4G cellular), switch to Cloud API seamlessly
-    if (baseUrl !== CLOUD_API_URL) {
-      isLanUnreachable = true;
-      return apiClient<T>(endpoint, {
-        ...options,
-        _retried: true,
-        _useCloud: true,
-        timeoutMs: Math.max(options.timeoutMs ?? 45000, 45000),
-      });
-    }
 
     if (error.name === 'AbortError' || error?.message?.includes('canceled') || error?.message?.includes('aborted')) {
       const customErr = new Error(`Request timed out or connection was aborted.`);

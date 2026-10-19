@@ -273,10 +273,10 @@ export const ProjectProgressScreen = () => {
 
   const currentProject = projects.find((p) => p.id === selectedProjectId) || activeProject;
 
-  const loadData = useCallback(async (targetId?: string) => {
+  const loadData = useCallback(async (targetId?: string, silent = false) => {
     const pId = targetId || selectedProjectId;
     if (!pId) return;
-    setLoading(true);
+    if (!silent) setLoading(true);
     try {
       const [tasksData, photosData, docsData] = await Promise.all([
         fetchTasks(pId),
@@ -294,7 +294,7 @@ export const ProjectProgressScreen = () => {
     } catch (err: any) {
       console.warn('Failed to load tasks, photos, and documents:', err);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [selectedProjectId]);
 
@@ -500,6 +500,37 @@ export const ProjectProgressScreen = () => {
     }
     if (!selectedProjectId) return;
     const targetAssignee = 'Civil Contractor';
+
+    // 1. Instant 0ms Optimistic local update
+    const previousTasks = [...tasks];
+    setTasks((prev) => {
+      const hasExisting = prev.some(
+        (t) => t.phaseName.trim().toLowerCase() === phaseName.trim().toLowerCase()
+      );
+      if (hasExisting) {
+        return prev.map((t) =>
+          t.phaseName.trim().toLowerCase() === phaseName.trim().toLowerCase()
+            ? { ...t, progressPercent: targetPercent, isCompleted: targetPercent >= 100, assignee: 'Civil Contractor' }
+            : t
+        );
+      } else {
+        const newTaskItem: Task = {
+          id: `temp-phase-${Date.now()}`,
+          projectId: selectedProjectId,
+          phaseName,
+          title: `${phaseName} · Civil Contractor Deliverables`,
+          assignee: targetAssignee,
+          dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+          progressPercent: targetPercent,
+          isCompleted: targetPercent >= 100,
+        };
+        return [newTaskItem, ...prev];
+      }
+    });
+
+    setBannerMsg(`Phase "${phaseName}" updated to ${targetPercent}%.`);
+
+    // 2. Asynchronously sync to backend
     try {
       await dispatchRecord({
         actionType: 'phase_update',
@@ -512,35 +543,12 @@ export const ProjectProgressScreen = () => {
         },
       });
 
-      // Update local task state immediately for instant feedback
-      setTasks((prev) => {
-        const hasExisting = prev.some(
-          (t) => t.phaseName.trim().toLowerCase() === phaseName.trim().toLowerCase()
-        );
-        if (hasExisting) {
-          return prev.map((t) =>
-            t.phaseName.trim().toLowerCase() === phaseName.trim().toLowerCase()
-              ? { ...t, progressPercent: targetPercent, isCompleted: targetPercent >= 100, assignee: 'Civil Contractor' }
-              : t
-          );
-        } else {
-          const newTaskItem: Task = {
-            id: `temp-phase-${Date.now()}`,
-            projectId: selectedProjectId,
-            phaseName,
-            title: `${phaseName} · Civil Contractor Deliverables`,
-            assignee: targetAssignee,
-            dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-            progressPercent: targetPercent,
-            isCompleted: targetPercent >= 100,
-          };
-          return [newTaskItem, ...prev];
-        }
-      });
-
-      setBannerMsg(`Phase "${phaseName}" updated to ${targetPercent}%. Synchronized with Web Admin.`);
-      await Promise.all([loadData(selectedProjectId), refreshProjects()]);
+      // Silent background refresh
+      loadData(selectedProjectId, true);
+      refreshProjects();
     } catch (err: any) {
+      // Revert if network call fails
+      setTasks(previousTasks);
       Alert.alert('Update Failed', err?.message || 'Could not update phase progress.');
     }
   };
@@ -551,14 +559,27 @@ export const ProjectProgressScreen = () => {
       Alert.alert('Read-Only Clearance', 'Client accounts cannot modify task deliverables.');
       return;
     }
+
+    // 1. Instant 0ms Optimistic local update
+    const previousTasks = [...tasks];
+    const optimisticTask: Task = {
+      ...task,
+      progressPercent: targetPercent,
+      isCompleted: targetPercent >= 100,
+    };
+    handleTaskUpdated(optimisticTask);
+
+    // 2. Asynchronously sync to backend
     try {
       const updated = await updateTask(task.id, {
         progressPercent: targetPercent,
         isCompleted: targetPercent >= 100,
       });
       handleTaskUpdated(updated);
-      await Promise.all([loadData(selectedProjectId), refreshProjects()]);
+      loadData(selectedProjectId, true);
+      refreshProjects();
     } catch (err: any) {
+      setTasks(previousTasks);
       Alert.alert('Update Failed', err?.message || 'Failed to update task progress.');
     }
   };
@@ -571,14 +592,27 @@ export const ProjectProgressScreen = () => {
     }
     const nextCompleted = !task.isCompleted;
     const nextPercent = nextCompleted ? 100 : 0;
+
+    // 1. Instant 0ms Optimistic local update
+    const previousTasks = [...tasks];
+    const optimisticTask: Task = {
+      ...task,
+      isCompleted: nextCompleted,
+      progressPercent: nextPercent,
+    };
+    handleTaskUpdated(optimisticTask);
+
+    // 2. Asynchronously sync to backend
     try {
       const updated = await updateTask(task.id, {
         isCompleted: nextCompleted,
         progressPercent: nextPercent,
       });
       handleTaskUpdated(updated);
-      await Promise.all([loadData(selectedProjectId), refreshProjects()]);
+      loadData(selectedProjectId, true);
+      refreshProjects();
     } catch (err: any) {
+      setTasks(previousTasks);
       Alert.alert('Update Failed', err?.message || 'Failed to toggle task completion.');
     }
   };
@@ -627,7 +661,8 @@ export const ProjectProgressScreen = () => {
       setCustomTradeInput('');
       setNewTaskProgressPercent(0);
       setAddTaskModalVisible(false);
-      await Promise.all([loadData(selectedProjectId), refreshProjects()]);
+      loadData(selectedProjectId, true);
+      refreshProjects(true);
     } catch (err: any) {
       Alert.alert('Creation Failed', err?.message || 'Could not create task.');
     } finally {
@@ -719,7 +754,8 @@ export const ProjectProgressScreen = () => {
       setPhotoUri(null);
       setPhotoCaption('');
       setUploadPhotoModalVisible(false);
-      await Promise.all([loadData(selectedProjectId), refreshProjects()]);
+      loadData(selectedProjectId, true);
+      refreshProjects(true);
     } catch (err: any) {
       Alert.alert('Upload Failed', err?.message || 'Could not upload site photo.');
     } finally {

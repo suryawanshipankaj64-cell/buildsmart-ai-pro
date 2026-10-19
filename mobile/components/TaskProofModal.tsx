@@ -160,21 +160,20 @@ export const TaskProofModal: React.FC<TaskProofModalProps> = ({
         proofImageUrl: photoUri || undefined,
       });
 
-      // Also record site photo if new photo was taken
-      if (photoUri && task.projectId) {
-        try {
-          await uploadSitePhoto({
-            projectId: task.projectId,
-            imageUrl: photoUri,
-            caption: `[${task.phaseName || 'Planning'}] Proof: ${task.title} (${progressPercent}%)`,
-            latitude: locationCoords?.lat,
-            longitude: locationCoords?.lon,
-          });
-        } catch {}
-      }
-
+      // Immediately notify parent screen and dismiss modal for instantaneous feedback
       onTaskUpdated?.(updated);
       onClose();
+
+      // Also record site photo proof in gallery asynchronously in background
+      if (photoUri && task.projectId) {
+        uploadSitePhoto({
+          projectId: task.projectId,
+          imageUrl: photoUri,
+          caption: `[${task.phaseName || 'Planning'}] Proof: ${task.title} (${progressPercent}%)`,
+          latitude: locationCoords?.lat,
+          longitude: locationCoords?.lon,
+        }).catch((e) => console.warn('Background site photo upload:', e));
+      }
     } catch (err: any) {
       Alert.alert('Update Failed', err?.message || 'Could not sync task update with server.');
     } finally {

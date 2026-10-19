@@ -122,24 +122,49 @@ export const ExpenseEntryScreen = () => {
       return;
     }
 
+    const finalItem = itemName.trim();
+    const finalAmount = numAmount;
+    const finalCategory = category;
+    const finalDate = calculateEffectiveDate();
+    const tempId = `temp-exp-${Date.now()}`;
+
+    // 1. Instant Optimistic UI feedback: update screen in 0ms!
+    const optimisticExpense: Expense = {
+      id: tempId,
+      projectId: targetProjectId,
+      category: finalCategory,
+      itemName: finalItem,
+      amount: finalAmount,
+      date: finalDate,
+      createdAt: new Date().toISOString(),
+    };
+
+    setRecentExpenses((prev) => [optimisticExpense, ...prev]);
+    setItemName('');
+    setAmount('');
+    setBannerMsg(`Logged ₹${finalAmount.toLocaleString('en-IN')} for "${finalItem}".`);
+
+    // 2. Non-blocking asynchronous sync to Cloud Backend
     setIsSubmitting(true);
     try {
-      const payloadDate = calculateEffectiveDate();
-      const newExpense = await createExpense({
+      const savedExpense = await createExpense({
         projectId: targetProjectId,
-        category,
-        itemName: itemName.trim(),
-        amount: numAmount,
-        date: payloadDate,
+        category: finalCategory,
+        itemName: finalItem,
+        amount: finalAmount,
+        date: finalDate,
       });
 
-      setBannerMsg(`Logged ₹${numAmount.toLocaleString('en-IN')} for "${itemName.trim()}".`);
-      setItemName('');
-      setAmount('');
+      // Swap temporary ID with server confirmed ID
+      setRecentExpenses((prev) =>
+        prev.map((e) => (e.id === tempId ? savedExpense : e))
+      );
 
-      // Refresh list and global project state
-      await Promise.all([loadExpenses(), refreshProjects()]);
+      // Background project metrics sync
+      refreshProjects().catch(() => {});
     } catch (err: any) {
+      // Rollback on failure
+      setRecentExpenses((prev) => prev.filter((e) => e.id !== tempId));
       Alert.alert('Logging Failed', err?.message || 'Failed to submit expense transaction.');
     } finally {
       setIsSubmitting(false);

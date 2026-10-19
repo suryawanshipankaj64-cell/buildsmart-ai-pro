@@ -13,7 +13,7 @@ interface ProjectContextType {
   error: string | null;
   metrics: DashboardMetrics;
   setActiveProjectId: (id: string) => void;
-  refreshProjects: () => Promise<void>;
+  refreshProjects: (silent?: boolean) => Promise<void>;
 }
 
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
@@ -60,9 +60,9 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
     loadCached();
   }, [isClient, user?.id, (user as any)?.projectId]);
 
-  const loadProjects = useCallback(async () => {
+  const loadProjects = useCallback(async (silent = false) => {
     if (!isAuthenticated || !isApproved) return;
-    setIsLoading(true);
+    if (!silent) setIsLoading(true);
     setError(null);
     try {
       const targetProjectId = (user as any)?.projectId;
@@ -100,16 +100,16 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
         console.log('[ProjectContext] Load error:', err?.message);
       }
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   }, [isAuthenticated, isApproved, user?.id, user?.email, (user as any)?.projectId, role, isClient]);
 
   useEffect(() => {
     loadProjects();
-    // Live-sync interval: automatically poll updates every 12 seconds
+    // Live-sync interval: automatically poll updates every 15 seconds silently without UI flash
     const interval = setInterval(() => {
-      loadProjects();
-    }, 12000);
+      loadProjects(true);
+    }, 15000);
     return () => clearInterval(interval);
   }, [loadProjects]);
 
