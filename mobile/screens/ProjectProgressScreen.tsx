@@ -88,43 +88,43 @@ const SAMPLE_PHOTO_PRESETS = [
   {
     label: 'Planning & Layout',
     url: 'https://images.unsplash.com/photo-1541888946425-d0fbb18f15f6?auto=format&fit=crop&w=1200&q=80',
-    caption: 'Planning site boundary pegging & excavation grid verified',
+    caption: '[Planning] Planning site boundary pegging & excavation grid verified',
     phase: 'Planning',
   },
   {
     label: 'Excavation & Footing',
     url: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=1200&q=80',
-    caption: 'Substructure footing pit excavation & soil compaction inspection',
+    caption: '[Substructure & Foundation] Substructure footing pit excavation & soil compaction inspection',
     phase: 'Substructure & Foundation',
   },
   {
     label: 'Rebar & Framing',
     url: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&w=1200&q=80',
-    caption: 'Superstructure column reinforcement steel rebar tied to spec',
+    caption: '[Superstructure & Masonry] Superstructure column reinforcement steel rebar tied to spec',
     phase: 'Superstructure & Masonry',
   },
   {
     label: 'Plumbing Lines',
     url: 'https://images.unsplash.com/photo-1585704032915-c3400ca199e7?auto=format&fit=crop&w=1200&q=80',
-    caption: 'Concealed CPVC plumbing water lines & drainage pipeline inspection',
+    caption: '[Plumbing Work] Concealed CPVC plumbing water lines & drainage pipeline inspection',
     phase: 'Plumbing Work',
   },
   {
     label: 'Electrical Conduits',
     url: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=1200&q=80',
-    caption: 'PVC conduit chasing, distribution box & circuit wiring inspection',
+    caption: '[Electrical Work] PVC conduit chasing, distribution box & circuit wiring inspection',
     phase: 'Electrical Work',
   },
   {
     label: 'Paint & Facade',
     url: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=1200&q=80',
-    caption: 'Paint & wall putty primer coat application inspection',
+    caption: '[Paint & Finishing Work] Paint & wall putty primer coat application inspection',
     phase: 'Paint & Finishing Work',
   },
   {
     label: 'Interior Millwork',
     url: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=1200&q=80',
-    caption: 'Interior ceiling panelling and custom millwork cabinetry fitting',
+    caption: '[Interior & Woodwork] Interior ceiling panelling and custom millwork cabinetry fitting',
     phase: 'Interior & Woodwork',
   },
 ];
@@ -161,6 +161,52 @@ const normalizePhaseName = (phase?: string | null): string => {
   if (match) return match;
 
   return phase.trim();
+};
+
+// Helper to extract tagged phase from photo caption e.g. "[Planning] Proof of work" -> "Planning"
+const extractPhaseFromCaption = (caption?: string | null): string | null => {
+  if (!caption) return null;
+  const match = caption.match(/^\s*\[([^\]]+)\]/);
+  if (match && match[1]) {
+    return normalizePhaseName(match[1]);
+  }
+  return null;
+};
+
+// Strict, accurate check to ensure photos appear strictly in their designated phase
+const isPhotoForPhase = (
+  photo: { caption?: string | null } | string | null | undefined,
+  phase: string
+): boolean => {
+  const cap = typeof photo === 'string' ? photo : photo?.caption;
+  if (!cap) return false;
+
+  const normalizedTargetPhase = normalizePhaseName(phase);
+  const targetLower = normalizedTargetPhase.toLowerCase();
+
+  // 1. If photo caption begins with [PhaseName], it belongs EXCLUSIVELY to that tagged phase
+  const tagged = extractPhaseFromCaption(cap);
+  if (tagged) {
+    return tagged.toLowerCase() === targetLower;
+  }
+
+  // 2. Exact match of phase name in caption e.g. "[Electrical Work]" or "Electrical Work"
+  const capLower = cap.toLowerCase();
+  if (capLower.includes(`[${targetLower}]`)) return true;
+  if (capLower.includes(targetLower)) return true;
+
+  // 3. Fallback to distinct phase keywords, excluding common construction stopwords like 'work'
+  const stopWords = new Set(['work', 'phase', 'proof', 'site', 'inspection', 'and', 'the', 'for']);
+  const distinctKeywords = targetLower
+    .split(/[\s&/]+/)
+    .map((w) => w.trim())
+    .filter((w) => w.length > 3 && !stopWords.has(w));
+
+  if (distinctKeywords.length > 0) {
+    return distinctKeywords.some((kw) => capLower.includes(kw));
+  }
+
+  return false;
 };
 
 export const ProjectProgressScreen = () => {
@@ -745,9 +791,7 @@ export const ProjectProgressScreen = () => {
   // Filter Site Photos for gallery
   const filteredSitePhotos = sitePhotos.filter((photo) => {
     if (selectedPhotoFilterPhase === 'All Photos') return true;
-    const captionLower = (photo.caption || '').toLowerCase();
-    const filterLower = selectedPhotoFilterPhase.toLowerCase();
-    return captionLower.includes(`[${filterLower}]`) || captionLower.includes(filterLower);
+    return isPhotoForPhase(photo, selectedPhotoFilterPhase);
   });
 
   return (
@@ -1055,14 +1099,7 @@ export const ProjectProgressScreen = () => {
                   return null;
                 }
 
-                const phasePhotos = sitePhotos.filter((p) => {
-                  const cap = (p.caption || '').toLowerCase();
-                  const phaseLower = phase.toLowerCase();
-                  if (cap.includes(`[${phaseLower}]`)) return true;
-                  if (cap.includes(phaseLower)) return true;
-                  const words = phaseLower.split(/[\s&/]+/).filter((w) => w.length > 3);
-                  return words.some((w) => cap.includes(w));
-                });
+                const phasePhotos = sitePhotos.filter((p) => isPhotoForPhase(p, phase));
 
                 // Also include any proof photos uploaded on tasks in this phase
                 const taskProofPhotos: SitePhoto[] = phaseMatchingTasks
@@ -1507,10 +1544,7 @@ export const ProjectProgressScreen = () => {
               </Text>
             </TouchableOpacity>
             {activePhaseNames.map((phase) => {
-              const count = sitePhotos.filter((p) =>
-                (p.caption || '').toLowerCase().includes(`[${phase.toLowerCase()}]`) ||
-                (p.caption || '').toLowerCase().includes(phase.toLowerCase())
-              ).length;
+              const count = sitePhotos.filter((p) => isPhotoForPhase(p, phase)).length;
               const isActive = selectedPhotoFilterPhase === phase;
               return (
                 <TouchableOpacity

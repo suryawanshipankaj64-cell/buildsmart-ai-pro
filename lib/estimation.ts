@@ -42,6 +42,57 @@ export function normalizePhaseName(phase?: string | null): string {
   return phase.trim();
 }
 
+/**
+ * Extracts tagged phase from caption e.g. "[Planning] Proof of work" -> "Planning"
+ */
+export function extractPhaseFromCaption(caption?: string | null): string | null {
+  if (!caption) return null;
+  const match = caption.match(/^\s*\[([^\]]+)\]/);
+  if (match && match[1]) {
+    return normalizePhaseName(match[1]);
+  }
+  return null;
+}
+
+/**
+ * Accurately determines if a site inspection photo belongs to a specific construction phase.
+ * Prevents false matches where generic words like 'work' cause a photo to appear across all phases.
+ */
+export function isPhotoForPhase(
+  photoOrCaption: { caption?: string | null } | string | null | undefined,
+  targetPhase: string
+): boolean {
+  const cap = typeof photoOrCaption === 'string' ? photoOrCaption : photoOrCaption?.caption;
+  if (!cap) return false;
+
+  const targetNormalized = normalizePhaseName(targetPhase);
+  const targetLower = targetNormalized.toLowerCase();
+
+  // 1. If photo caption begins with [PhaseName], it belongs EXCLUSIVELY to that tagged phase
+  const taggedPhase = extractPhaseFromCaption(cap);
+  if (taggedPhase) {
+    return taggedPhase.toLowerCase() === targetLower;
+  }
+
+  // 2. Exact match of phase name in caption e.g. "[Electrical Work]" or "Electrical Work"
+  const capLower = cap.toLowerCase();
+  if (capLower.includes(`[${targetLower}]`)) return true;
+  if (capLower.includes(targetLower)) return true;
+
+  // 3. Fallback to distinct phase keywords, excluding common construction stopwords
+  const stopWords = new Set(['work', 'phase', 'proof', 'site', 'inspection', 'and', 'the', 'for']);
+  const distinctKeywords = targetLower
+    .split(/[\s&/]+/)
+    .map((w) => w.trim())
+    .filter((w) => w.length > 3 && !stopWords.has(w));
+
+  if (distinctKeywords.length > 0) {
+    return distinctKeywords.some((kw) => capLower.includes(kw));
+  }
+
+  return false;
+}
+
 
 export interface AdminRates {
   baseRatePerSqFt: number;

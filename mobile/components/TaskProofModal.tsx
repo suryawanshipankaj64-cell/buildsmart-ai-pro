@@ -164,7 +164,7 @@ export const TaskProofModal: React.FC<TaskProofModalProps> = ({
           await uploadSitePhoto({
             projectId: task.projectId,
             imageUrl: photoUri,
-            caption: `Proof of Work: ${task.title} (${progressPercent}%)`,
+            caption: `[${task.phaseName || 'Planning'}] Proof: ${task.title} (${progressPercent}%)`,
             latitude: locationCoords?.lat,
             longitude: locationCoords?.lon,
           });

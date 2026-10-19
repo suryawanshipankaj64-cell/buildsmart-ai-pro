@@ -41,7 +41,7 @@ import {
 import { fetcher, postJson } from '@/lib/fetcher';
 import { formatCurrency, formatDate, formatNumber } from '@/lib/utils';
 import { computeRisk } from '@/lib/risk';
-import { DEFAULT_PHASES, normalizePhaseName, calculateRequiredEquipment, EquipmentItem } from '@/lib/estimation';
+import { DEFAULT_PHASES, normalizePhaseName, calculateRequiredEquipment, EquipmentItem, isPhotoForPhase } from '@/lib/estimation';
 import ProgressBar from '@/components/ProgressBar';
 import StatusBadge from '@/components/StatusBadge';
 import RiskGauge from '@/components/RiskGauge';
@@ -685,10 +685,7 @@ function PlanningTab({ project, onSelectPhoto }: { project: any; onSelectPhoto: 
       <div className="space-y-4">
         {allPhases.map((phase) => {
           const phaseTasks = filteredTasks.filter((t: any) => t.phaseName === phase);
-          const phasePhotos = sitePhotos.filter((p: any) => 
-            (p.caption || '').toLowerCase().includes(`[${phase.toLowerCase()}]`) ||
-            (p.caption || '').toLowerCase().includes(phase.toLowerCase())
-          );
+          const phasePhotos = sitePhotos.filter((p: any) => isPhotoForPhase(p, phase));
           const phaseAvg = phaseTasks.length
             ? Math.round(
                 phaseTasks.reduce((s: number, t: any) => s + (t.isCompleted ? 100 : t.progressPercent || 0), 0) /
@@ -1146,10 +1143,7 @@ function SitePhotosTab({ project, onSelectPhoto }: { project: any; onSelectPhoto
 
   const filteredPhotos = phaseFilter === 'ALL'
     ? sitePhotos
-    : sitePhotos.filter((p: any) =>
-        (p.caption || '').toLowerCase().includes(`[${phaseFilter.toLowerCase()}]`) ||
-        (p.caption || '').toLowerCase().includes(phaseFilter.toLowerCase())
-      );
+    : sitePhotos.filter((p: any) => isPhotoForPhase(p, phaseFilter));
 
   async function deletePhoto(photoId: string) {
     if (!confirm('Are you sure you want to delete this inspection photo?')) return;
@@ -1186,10 +1180,7 @@ function SitePhotosTab({ project, onSelectPhoto }: { project: any; onSelectPhoto
             All Photos ({sitePhotos.length})
           </button>
           {allPhases.map((phase) => {
-            const count = sitePhotos.filter((p: any) =>
-              (p.caption || '').toLowerCase().includes(`[${phase.toLowerCase()}]`) ||
-              (p.caption || '').toLowerCase().includes(phase.toLowerCase())
-            ).length;
+            const count = sitePhotos.filter((p: any) => isPhotoForPhase(p, phase)).length;
             return (
               <button
                 key={phase}
@@ -1683,10 +1674,7 @@ function StatisticsTab({
     const percent = total > 0 
       ? Math.round(pTasks.reduce((s: number, t: any) => s + (t.isCompleted ? 100 : t.progressPercent || 0), 0) / total) 
       : 0;
-    const photoCount = sitePhotos.filter((p: any) => 
-      (p.caption || '').toLowerCase().includes(`[${phase.toLowerCase()}]`) ||
-      (p.caption || '').toLowerCase().includes(phase.toLowerCase())
-    ).length;
+    const photoCount = sitePhotos.filter((p: any) => isPhotoForPhase(p, phase)).length;
 
     return {
       phase,

@@ -94,7 +94,7 @@ export const QuickActionModal: React.FC<QuickActionModalProps> = ({
       } else if (actionType === 'photo') {
         payload = {
           imageUrl: 'https://images.unsplash.com/photo-1541888946425-d0fbb18f15f6?auto=format&fit=crop&w=1200&q=80',
-          caption: note || 'Proof of work inspection photo',
+          caption: note.trim() ? `[${phaseName}] ${note.trim()}` : `[${phaseName}] Proof of work inspection photo`,
           latitude: 12.9716,
           longitude: 77.5946,
         };
