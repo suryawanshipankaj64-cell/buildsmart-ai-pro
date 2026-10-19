@@ -32,20 +32,9 @@ function LoginForm() {
       });
 
       if (res?.error) {
-        setError('Invalid administrator email or password.');
+        setError('Invalid credentials. Please verify your email and password.');
         setLoading(false);
       } else {
-        // Verify that the logged-in user is an ADMIN
-        const sessionRes = await fetch('/api/auth/session');
-        const sessionData = await sessionRes.json();
-        
-        if (sessionData?.user?.role && sessionData.user.role.toUpperCase() !== 'ADMIN') {
-          setError('Access Restricted: Only Administrator accounts can log in to the web console. Please use the mobile app.');
-          await fetch('/api/auth/signout', { method: 'POST' });
-          setLoading(false);
-          return;
-        }
-
         router.push('/dashboard');
         router.refresh();
       }
@@ -66,7 +55,7 @@ function LoginForm() {
           BuildSmart AI
         </h1>
         <p className="mt-1 text-xs font-mono font-medium text-signal-slate uppercase tracking-wider">
-          Executive Admin Console
+          Enterprise Construction Portal
         </p>
       </div>
 
@@ -82,7 +71,7 @@ function LoginForm() {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="mb-1.5 block text-xs font-mono font-medium text-signal-slate uppercase tracking-wider">
-            Admin Email
+            Email Address
           </label>
           <div className="relative">
             <Mail className="absolute left-3.5 top-3.5 text-signal-slate" size={16} />

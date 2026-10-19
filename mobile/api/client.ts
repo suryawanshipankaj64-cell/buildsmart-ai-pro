@@ -107,17 +107,24 @@ export async function setStoredHostIp(ip: string): Promise<void> {
   await setSecureItem(HOST_IP_KEY, url);
 }
 
+export const CLOUD_API_URL = 'https://buildsmart-ai-pro.vercel.app/api';
+
 export interface ApiRequestOptions extends RequestInit {
   timeoutMs?: number;
   _retried?: boolean;
+  _useCloud?: boolean;
 }
 
-// Main HTTP Client with automatic Bearer token injection
+// Main HTTP Client with automatic Bearer token injection and dual LAN/Cloud resilience
 export async function apiClient<T = any>(
   endpoint: string,
   options: ApiRequestOptions = {}
 ): Promise<T> {
-  const baseUrl = options._retried ? getAutoDetectedHost() : await getStoredHostIp();
+  const baseUrl = options._useCloud
+    ? CLOUD_API_URL
+    : options._retried
+    ? getAutoDetectedHost()
+    : await getStoredHostIp();
   const token = await getStoredToken();
 
   const formattedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
@@ -178,6 +185,8 @@ export async function apiClient<T = any>(
     const autoHost = getAutoDetectedHost();
     if (!options._retried && baseUrl !== autoHost) {
       return apiClient<T>(endpoint, { ...options, _retried: true });
+    } else if (!options._useCloud && baseUrl !== CLOUD_API_URL) {
+      return apiClient<T>(endpoint, { ...options, _retried: true, _useCloud: true, timeoutMs: 12000 });
     }
 
     if (error.name === 'AbortError' || error?.message?.includes('canceled') || error?.message?.includes('aborted')) {

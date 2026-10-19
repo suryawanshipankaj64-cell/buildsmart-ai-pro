@@ -17,6 +17,7 @@ import { ExpenseEntryScreen } from '../screens/ExpenseEntryScreen';
 import { DocumentsScreen } from '../screens/DocumentsScreen';
 import { RecordDrawer } from '../components/RecordDrawer';
 import { useAuth } from '../context/AuthContext';
+import { useNavigation } from '@react-navigation/native';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
@@ -24,6 +25,7 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 const DummyRecordScreen = () => <View style={{ flex: 1, backgroundColor: colors.backgroundDeep }} />;
 
 export const TabNavigator = () => {
+  const navigation = useNavigation();
   const [drawerVisible, setDrawerVisible] = useState<boolean>(false);
   const { isClient } = useAuth();
 
@@ -120,6 +122,12 @@ export const TabNavigator = () => {
       <RecordDrawer
         visible={drawerVisible}
         onClose={() => setDrawerVisible(false)}
+        onNavigateToExpense={(projectId) => {
+          (navigation as any).navigate('ExpenseEntry', { projectId });
+        }}
+        onNavigateToDocuments={(projectId) => {
+          (navigation as any).navigate('Documents', { projectId });
+        }}
       />
     </>
   );

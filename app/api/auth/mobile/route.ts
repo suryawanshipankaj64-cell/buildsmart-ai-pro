@@ -149,13 +149,25 @@ export async function GET(req: Request) {
         return NextResponse.json({ error: 'User no longer exists.' }, { status: 404 });
       }
 
+      let clientProjectName = '';
+      if (decoded.projectId) {
+        const proj = await prisma.project.findUnique({
+          where: { id: decoded.projectId },
+          select: { name: true },
+        });
+        if (proj) clientProjectName = proj.name;
+      }
+
       return NextResponse.json({
         user: {
           id: user.id,
-          name: user.name || 'Site Engineer',
+          name: decoded.projectId
+            ? (clientProjectName ? `Client · ${clientProjectName}` : (user.name || 'Client'))
+            : (user.name || (user.role === 'ADMIN' ? 'Pankaj Suryawanshi' : 'Site Engineer')),
           email: user.email,
-          role: user.role,
+          role: decoded.projectId ? 'CLIENT' : user.role,
           isApproved: user.isApproved,
+          projectId: decoded.projectId || undefined,
         },
       });
     } catch {

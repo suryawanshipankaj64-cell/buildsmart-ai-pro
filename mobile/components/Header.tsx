@@ -22,7 +22,14 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const insets = useSafeAreaInsets();
   const { user, role } = useAuth();
-  const userName = user?.name ? user.name.split(' ')[0] : role === 'ADMIN' ? 'Admin' : role === 'CLIENT' ? 'Client' : 'Engineer';
+  const userName =
+    role === 'ENGINEER'
+      ? 'Site Engineer'
+      : role === 'ADMIN'
+      ? 'Admin'
+      : role === 'CLIENT'
+      ? (user?.name?.replace(/^(Client\s*·?\s*)/i, '') || 'Client')
+      : 'Site Engineer';
 
   const roleDisplay =
     role === 'ADMIN'

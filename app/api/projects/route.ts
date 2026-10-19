@@ -10,13 +10,18 @@ export async function GET(req: Request) {
 
     // If Client: isolate data so they ONLY see their own project
     let whereClause: any = {};
-    if (auth.isClient && auth.userId) {
-      whereClause = {
-        userId: auth.userId,
-      };
+    if (auth.isClient) {
+      if (auth.projectId) {
+        whereClause = { id: auth.projectId };
+      } else if (auth.userId) {
+        whereClause = { userId: auth.userId };
+      } else {
+        // If client has no identifiable project or user, return empty array
+        return NextResponse.json([]);
+      }
     }
 
-    let projects = await prisma.project.findMany({
+    const projects = await prisma.project.findMany({
       where: whereClause,
       orderBy: { createdAt: 'desc' },
       include: {
@@ -28,21 +33,6 @@ export async function GET(req: Request) {
         },
       },
     });
-
-    // If Client has no isolated projects assigned directly to their userId, show active company projects in read-only mode
-    if (auth.isClient && projects.length === 0) {
-      projects = await prisma.project.findMany({
-        orderBy: { createdAt: 'desc' },
-        include: {
-          tasks: true,
-          expenses: true,
-          estimate: true,
-          sitePhotos: {
-            orderBy: { uploadedAt: 'desc' },
-          },
-        },
-      });
-    }
 
     return NextResponse.json(projects);
   } catch (error: any) {
@@ -186,19 +176,17 @@ export async function POST(req: Request) {
         { phaseName: 'Handover & Commissioning', title: 'Site Deep Cleaning, Final Inspection Certification & Client Handover' },
       ];
 
-      for (const t of standardTasks) {
-        await prisma.task.create({
-          data: {
-            projectId: project.id,
-            phaseName: t.phaseName,
-            title: t.title,
-            assignee: 'Civil Contractor',
-            dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-            progressPercent: 0,
-            isCompleted: false,
-          },
-        });
-      }
+      await prisma.task.createMany({
+        data: standardTasks.map((t) => ({
+          projectId: project.id,
+          phaseName: t.phaseName,
+          title: t.title,
+          assignee: 'Civil Contractor',
+          dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          progressPercent: 0,
+          isCompleted: false,
+        })),
+      });
     }
 
     // 6. If coverImageUrl is provided, attach as initial Architectural Blueprint / Site Plan photo

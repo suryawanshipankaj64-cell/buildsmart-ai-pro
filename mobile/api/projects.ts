@@ -3,12 +3,13 @@ import { Project, RiskAnalysis } from '../types';
 
 export const FALLBACK_PROJECTS: Project[] = [];
 
-export async function fetchProjects(userContext?: { userId?: string; email?: string; role?: string }): Promise<Project[]> {
+export async function fetchProjects(userContext?: { userId?: string; email?: string; role?: string; projectId?: string }): Promise<Project[]> {
   try {
     const queryParams = new URLSearchParams();
     if (userContext?.userId) queryParams.append('userId', userContext.userId);
     if (userContext?.email) queryParams.append('email', userContext.email);
     if (userContext?.role) queryParams.append('role', userContext.role);
+    if (userContext?.projectId) queryParams.append('projectId', userContext.projectId);
 
     const qs = queryParams.toString();
     const endpoint = qs ? `/projects?${qs}` : '/projects';

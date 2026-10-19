@@ -37,10 +37,12 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
             const hasLegacyFakeIds = parsed.some((p: Project) => p.id?.startsWith('proj-') || p.id?.startsWith('cmux8b0pe0006'));
             if (!hasLegacyFakeIds) {
               let initialProjects = parsed;
-              if (isClient && user?.id) {
-                const clientFiltered = parsed.filter((p: Project) => p.userId === user.id || p.clientId === user.id);
-                if (clientFiltered.length > 0) {
-                  initialProjects = clientFiltered;
+              const targetProjectId = (user as any)?.projectId;
+              if (isClient) {
+                if (targetProjectId) {
+                  initialProjects = parsed.filter((p: Project) => p.id === targetProjectId);
+                } else if (user?.id) {
+                  initialProjects = parsed.filter((p: Project) => p.userId === user.id || p.clientId === user.id);
                 }
               }
               setProjects(initialProjects);
@@ -56,29 +58,31 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
     }
 
     loadCached();
-  }, [isClient, user?.id]);
+  }, [isClient, user?.id, (user as any)?.projectId]);
 
   const loadProjects = useCallback(async () => {
     if (!isAuthenticated || !isApproved) return;
     setIsLoading(true);
     setError(null);
     try {
+      const targetProjectId = (user as any)?.projectId;
       const data = await fetchProjects({
         userId: user?.id,
         email: user?.email,
         role,
+        projectId: targetProjectId,
       });
 
       let finalProjects: Project[] = Array.isArray(data) ? data : [];
-      if (isClient && user?.id) {
-        const clientFiltered = finalProjects.filter((p) => p.userId === user.id || p.clientId === user.id);
-        if (clientFiltered.length > 0) {
-          finalProjects = clientFiltered;
+      if (isClient) {
+        if (targetProjectId) {
+          finalProjects = finalProjects.filter((p) => p.id === targetProjectId);
+        } else if (user?.id) {
+          finalProjects = finalProjects.filter((p) => p.userId === user.id || p.clientId === user.id);
         }
       }
 
       setProjects(finalProjects);
-      const targetProjectId = (user as any)?.projectId;
       if (targetProjectId && finalProjects.some((p) => p.id === targetProjectId)) {
         setActiveProjectIdState(targetProjectId);
       } else if (finalProjects.length > 0) {
@@ -95,10 +99,15 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [isAuthenticated, isApproved, user?.id, user?.email, role, isClient]);
+  }, [isAuthenticated, isApproved, user?.id, user?.email, (user as any)?.projectId, role, isClient]);
 
   useEffect(() => {
     loadProjects();
+    // Live-sync interval: automatically poll updates every 12 seconds
+    const interval = setInterval(() => {
+      loadProjects();
+    }, 12000);
+    return () => clearInterval(interval);
   }, [loadProjects]);
 
   const activeProject = projects.find((p) => p.id === activeProjectId) || projects[0] || null;

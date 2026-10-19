@@ -9,12 +9,14 @@ export interface RequestAuth {
   isAdmin: boolean;
   isEngineer: boolean;
   isClient: boolean;
+  projectId: string | null;
 }
 
 export async function getRequestAuth(req: Request): Promise<RequestAuth> {
   let userId: string | null = null;
   let userEmail: string | null = null;
   let rawRole: string = '';
+  let projectId: string | null = null;
 
   // 1. Try NextAuth session (Web)
   try {
@@ -27,34 +29,43 @@ export async function getRequestAuth(req: Request): Promise<RequestAuth> {
   } catch {}
 
   // 2. Try Mobile Bearer token header (Authorization: Bearer <base64url>)
-  if (!userId) {
+  if (!userId || !projectId) {
     try {
       const authHeader = req.headers.get('authorization');
       if (authHeader && authHeader.startsWith('Bearer ')) {
         const rawToken = authHeader.replace('Bearer ', '').trim();
         const decoded = JSON.parse(Buffer.from(rawToken, 'base64url').toString('utf8'));
-        if (decoded?.id) {
+        if (decoded?.id && !userId) {
           userId = decoded.id;
           userEmail = decoded.email || null;
           rawRole = (decoded.role || '').toUpperCase();
+        }
+        if (decoded?.projectId && !projectId) {
+          projectId = String(decoded.projectId).trim();
         }
       }
     } catch {}
   }
 
-  // 3. Try query parameters fallback (?userId=, ?email=, ?role=)
-  if (!userId || !userEmail) {
-    try {
-      const url = new URL(req.url);
-      const qId = url.searchParams.get('userId');
-      const qEmail = url.searchParams.get('email') || url.searchParams.get('userEmail');
-      const qRole = url.searchParams.get('role');
+  // 3. Try headers and query parameters fallback (?projectId=, ?userId=, ?email=, ?role=)
+  try {
+    const headerProjectId = req.headers.get('x-project-id');
+    if (headerProjectId && !projectId) {
+      projectId = headerProjectId.trim();
+    }
 
-      if (qId && !userId) userId = qId;
-      if (qEmail && !userEmail) userEmail = qEmail;
-      if (qRole && !rawRole) rawRole = qRole.toUpperCase();
-    } catch {}
-  }
+    const url = new URL(req.url);
+    const qProjectId = url.searchParams.get('projectId');
+    if (qProjectId && !projectId) projectId = qProjectId.trim();
+
+    const qId = url.searchParams.get('userId');
+    const qEmail = url.searchParams.get('email') || url.searchParams.get('userEmail');
+    const qRole = url.searchParams.get('role');
+
+    if (qId && !userId) userId = qId;
+    if (qEmail && !userEmail) userEmail = qEmail;
+    if (qRole && !rawRole) rawRole = qRole.toUpperCase();
+  } catch {}
 
   // 4. Resolve against database if userEmail is found but userId or role is missing
   if (userEmail && (!userId || !rawRole)) {
@@ -81,7 +92,8 @@ export async function getRequestAuth(req: Request): Promise<RequestAuth> {
     (rawRole === 'CLIENT' ||
       rawRole === 'CUSTOMER' ||
       rawRole === 'USER' && emailLower.includes('client') ||
-      emailLower.includes('client@buildsmart.ai'));
+      emailLower.includes('client@buildsmart.ai') ||
+      !!projectId);
 
   const isEngineer = !isAdmin && !isClient;
 
@@ -98,6 +110,7 @@ export async function getRequestAuth(req: Request): Promise<RequestAuth> {
     isAdmin,
     isEngineer,
     isClient,
+    projectId,
   };
 }
 

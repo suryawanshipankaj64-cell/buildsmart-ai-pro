@@ -676,8 +676,8 @@ export const ProjectProgressScreen = () => {
         subtitle={`${currentProject?.name || 'Site Timeline'} · Phase & Task Supervision`}
       />
 
-      {/* Multi-Project Selector Header (If more than 1 project exists) */}
-      {projects.length > 1 && (
+      {/* Multi-Project Selector Header (If more than 1 project exists and not client) */}
+      {!isClient && projects.length > 1 && (
         <View style={styles.projectSelectorBar}>
           <Text style={styles.projectSelectorLabel}>ACTIVE PROJECT:</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>

@@ -128,19 +128,21 @@ export const DashboardScreen = () => {
   // Compute dynamic metrics depending on whether "Overall" or "Single Project" is selected
   const singleProjectRisk = activeProject ? calculateProjectRisk(activeProject) : null;
 
-  const displayBudget = isOverallMode || !activeProject
+  const effectiveOverallMode = isClient ? false : isOverallMode;
+
+  const displayBudget = effectiveOverallMode || !activeProject
     ? metrics.totalBudget
     : Number(activeProject.budget) || 0;
 
-  const displaySpent = isOverallMode || !activeProject
+  const displaySpent = effectiveOverallMode || !activeProject
     ? metrics.totalSpent
     : Number(activeProject.spent) || 0;
 
-  const displayProgress = isOverallMode || !activeProject
+  const displayProgress = effectiveOverallMode || !activeProject
     ? metrics.averageProgress
     : Math.round(Number(activeProject.progressPercent) || 0);
 
-  const displayRisk = isOverallMode || !activeProject || !singleProjectRisk
+  const displayRisk = effectiveOverallMode || !activeProject || !singleProjectRisk
     ? metrics.riskLevel
     : singleProjectRisk.level;
 
@@ -148,8 +150,16 @@ export const DashboardScreen = () => {
     <View style={styles.container}>
       {/* 1. Header Bar with Greeting & Actions */}
       <Header
-        title={`Hello, ${user?.name ? user.name.split(' ')[0] : 'Engineer'} 👋`}
-        subtitle={`Role: ${user?.role || 'ENGINEER'} · Technical Field Suite`}
+        title={`Hello, ${
+          isClient
+            ? (activeProject?.name ? `Client · ${activeProject.name}` : 'Client')
+            : (role === 'ADMIN' ? 'Admin' : 'Site Engineer')
+        } 👋`}
+        subtitle={
+          isClient
+            ? `Project ID: ${activeProject?.id || (user as any)?.projectId || 'Assigned'} · Read-Only Client Portal`
+            : `Role: ${role || 'ENGINEER'} · Technical Field Suite`
+        }
         onMenuPress={handleOpenSettings}
         onNotificationsPress={() => {}}
         unreadNotifications={metrics.notificationsCount}
@@ -198,42 +208,72 @@ export const DashboardScreen = () => {
 
         {/* 2. Weather Telemetry Widget */}
         <WeatherWidget
-          projectId={isOverallMode ? undefined : activeProject?.id}
-          cityName={isOverallMode ? (activeProject?.location || 'Regional Site') : activeProject?.location}
-          projectName={isOverallMode ? 'All Projects' : activeProject?.name}
+          projectId={effectiveOverallMode ? undefined : activeProject?.id}
+          cityName={effectiveOverallMode ? (activeProject?.location || 'Regional Site') : activeProject?.location}
+          projectName={effectiveOverallMode ? 'All Projects' : activeProject?.name}
         />
 
-        {/* 3. Project Scope Switcher Pill Bar */}
-        {projects.length > 0 ? (
+        {/* 3. Project Scope Switcher Pill Bar (Hidden for Client) or Client Project Card */}
+        {isClient && activeProject ? (
+          <View style={styles.clientProjectCard}>
+            <View style={styles.clientProjectHeader}>
+              <View style={styles.clientProjectIconBadge}>
+                <Building2 size={20} color="#3B82F6" />
+              </View>
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text style={styles.clientProjectName} numberOfLines={1}>
+                  {activeProject.name}
+                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, flexWrap: 'wrap', gap: 6 }}>
+                  <View style={styles.idBadge}>
+                    <Text style={styles.idBadgeText}>ID: {activeProject.id}</Text>
+                  </View>
+                  <Text style={styles.clientProjectLocation}>
+                    📍 {activeProject.location}
+                  </Text>
+                </View>
+              </View>
+            </View>
+            <View style={styles.clientProjectProgressRow}>
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <Text style={styles.progressLabel}>CONSTRUCTION COMPLETION</Text>
+                  <Text style={styles.progressPercent}>{Math.round(activeProject.progressPercent)}%</Text>
+                </View>
+                <View style={styles.progressBarTrack}>
+                  <View style={[styles.progressBarFill, { width: `${Math.min(100, Math.max(0, activeProject.progressPercent))}%` }]} />
+                </View>
+              </View>
+            </View>
+          </View>
+        ) : !isClient && projects.length > 0 ? (
           <View style={styles.projectFilterSection}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
               <Text style={styles.sectionTitle}>WORKSPACE SCOPE FILTER</Text>
-              {!isClient && (
-                <TouchableOpacity
-                  style={styles.addProjectHeaderBtn}
-                  onPress={() => setCreateModalVisible(true)}
-                >
-                  <Plus size={12} color="#071224" />
-                  <Text style={styles.addProjectHeaderBtnText}>NEW SITE</Text>
-                </TouchableOpacity>
-              )}
+              <TouchableOpacity
+                style={styles.addProjectHeaderBtn}
+                onPress={() => setCreateModalVisible(true)}
+              >
+                <Plus size={12} color="#071224" />
+                <Text style={styles.addProjectHeaderBtnText}>NEW SITE</Text>
+              </TouchableOpacity>
             </View>
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.projectPillsRow}>
               {/* Overall Portfolio Option */}
               <TouchableOpacity
-                style={[styles.projectPill, isOverallMode && styles.projectPillActive]}
+                style={[styles.projectPill, effectiveOverallMode && styles.projectPillActive]}
                 onPress={() => setIsOverallMode(true)}
               >
-                <Globe size={12} color={isOverallMode ? '#071224' : colors.primaryAccent} />
-                <Text style={[styles.projectPillText, isOverallMode && styles.projectPillTextActive]}>
+                <Globe size={12} color={effectiveOverallMode ? '#071224' : colors.primaryAccent} />
+                <Text style={[styles.projectPillText, effectiveOverallMode && styles.projectPillTextActive]}>
                   All Projects ({projects.length})
                 </Text>
               </TouchableOpacity>
 
               {/* Individual Projects */}
               {projects.map((proj) => {
-                const isActive = !isOverallMode && activeProject?.id === proj.id;
+                const isActive = !effectiveOverallMode && activeProject?.id === proj.id;
                 return (
                   <TouchableOpacity
                     key={proj.id}
@@ -270,7 +310,7 @@ export const DashboardScreen = () => {
         {/* 4. 2x3 Metric Cards Grid (Dynamically scoped) */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>
-            {isOverallMode ? 'PORTFOLIO KPI MATRIX' : `SITE KPI MATRIX (${activeProject?.name || 'ACTIVE'})`}
+            {effectiveOverallMode ? 'PORTFOLIO KPI MATRIX' : `SITE KPI MATRIX (${activeProject?.name || 'ACTIVE'})`}
           </Text>
           <Text style={styles.sectionBadge}>LIVE TELEMETRY</Text>
         </View>
@@ -801,6 +841,86 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     fontSize: 12,
     letterSpacing: 0.5,
+  },
+  clientProjectCard: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 8,
+    backgroundColor: colors.cardSurface,
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.4)',
+    borderRadius: 10,
+    padding: 14,
+  },
+  clientProjectHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  clientProjectIconBadge: {
+    width: 38,
+    height: 38,
+    borderRadius: 8,
+    backgroundColor: 'rgba(59, 130, 246, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  clientProjectName: {
+    fontSize: 15,
+    fontFamily: 'monospace',
+    fontWeight: '800',
+    color: colors.paper || '#F5F3ED',
+  },
+  idBadge: {
+    backgroundColor: 'rgba(59, 130, 246, 0.12)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.3)',
+  },
+  idBadgeText: {
+    fontSize: 10,
+    fontFamily: 'monospace',
+    fontWeight: '700',
+    color: '#60A5FA',
+  },
+  clientProjectLocation: {
+    fontSize: 11,
+    fontFamily: 'monospace',
+    color: colors.textMuted,
+  },
+  clientProjectProgressRow: {
+    marginTop: 12,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: colors.blueprintBorderMuted,
+  },
+  progressLabel: {
+    fontSize: 9,
+    fontFamily: 'monospace',
+    fontWeight: '700',
+    color: colors.textMuted,
+    letterSpacing: 0.5,
+  },
+  progressPercent: {
+    fontSize: 11,
+    fontFamily: 'monospace',
+    fontWeight: '800',
+    color: colors.primaryAccent,
+  },
+  progressBarTrack: {
+    height: 6,
+    backgroundColor: colors.backgroundDeep,
+    borderRadius: 3,
+    overflow: 'hidden',
+    marginTop: 4,
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: colors.primaryAccent,
+    borderRadius: 3,
   },
 });
 
