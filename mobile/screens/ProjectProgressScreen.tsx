@@ -1236,7 +1236,7 @@ export const ProjectProgressScreen = () => {
                           </View>
                         </View>
                         <Text style={styles.phaseSubText}>
-                          {phaseAllTasks.filter((t) => t.isCompleted || t.progressPercent >= 100).length} of {phaseAllTasks.length} task(s) done · {combinedPhasePhotos.length} photo(s) · {phaseDocs.length} doc(s)
+                          {phaseAllTasks.filter((t) => t.isCompleted || t.progressPercent >= 100).length} of {phaseAllTasks.length} task(s) completed · {combinedPhasePhotos.length} photo(s)
                         </Text>
                       </View>
 
@@ -1311,87 +1311,6 @@ export const ProjectProgressScreen = () => {
                         <ImageIcon size={12} color={colors.textMuted} />
                         <Text style={styles.phaseEmptyNoticeText}>
                           No inspection photos uploaded for this phase yet.
-                        </Text>
-                      </View>
-                    )}
-
-                    {/* Section 2: Phase Blueprints & Documents */}
-                    <View style={[styles.phaseSectionLabelRow, { marginTop: 10 }]}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                        <FileText size={11} color={colors.secondaryInfo} />
-                        <Text style={[styles.phaseSectionLabel, { color: colors.secondaryInfo }]}>
-                          PHASE BLUEPRINTS & CLEARANCES
-                        </Text>
-                      </View>
-                      <View style={[styles.phaseCountBadge, { borderColor: 'rgba(59, 130, 246, 0.4)', backgroundColor: 'rgba(59, 130, 246, 0.12)' }]}>
-                        <Text style={[styles.phaseCountBadgeText, { color: '#93C5FD' }]}>{phaseDocs.length}</Text>
-                      </View>
-                    </View>
-
-                    {phaseDocs.length > 0 ? (
-                      <View style={styles.phaseDocsList}>
-                        {phaseDocs.map((doc) => {
-                          const isPlan = doc.category === 'PLANS';
-                          const isPermit = doc.category === 'PERMITS';
-                          const isContract = doc.category === 'CONTRACTS';
-                          const badgeColor = isPlan ? colors.primaryAccent : isPermit ? colors.secondaryInfo : isContract ? '#F59E0B' : '#EC4899';
-
-                          return (
-                            <TouchableOpacity
-                              key={doc.id}
-                              style={styles.phaseDocItem}
-                              onPress={() => setSelectedDocPreview(doc)}
-                              activeOpacity={0.7}
-                            >
-                              <View style={[styles.phaseDocCategoryChip, { borderColor: badgeColor, backgroundColor: isPlan ? 'rgba(45, 191, 158, 0.12)' : 'rgba(59, 130, 246, 0.12)' }]}>
-                                <Text style={[styles.phaseDocCategoryText, { color: badgeColor }]}>
-                                  {doc.category}
-                                </Text>
-                              </View>
-
-                              <View style={styles.phaseDocInfo}>
-                                <Text style={styles.phaseDocTitle} numberOfLines={1}>
-                                  {doc.title}
-                                </Text>
-                                <Text style={styles.phaseDocSub} numberOfLines={1}>
-                                  {doc.fileName} · {doc.fileSize} · {doc.version}
-                                </Text>
-                              </View>
-
-                              <View style={styles.phaseDocActions}>
-                                <TouchableOpacity
-                                  style={styles.phaseDocActionBtn}
-                                  onPress={() => setSelectedDocPreview(doc)}
-                                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                                >
-                                  <Eye size={13} color={colors.primaryAccent} />
-                                </TouchableOpacity>
-
-                                <TouchableOpacity
-                                  style={styles.phaseDocActionBtn}
-                                  onPress={() => handleDownloadDocument(doc)}
-                                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                                >
-                                  <Download size={13} color="#93C5FD" />
-                                </TouchableOpacity>
-
-                                <TouchableOpacity
-                                  style={styles.phaseDocActionBtn}
-                                  onPress={() => handleShareDocument(doc)}
-                                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                                >
-                                  <Share2 size={13} color={colors.textMuted} />
-                                </TouchableOpacity>
-                              </View>
-                            </TouchableOpacity>
-                          );
-                        })}
-                      </View>
-                    ) : (
-                      <View style={styles.phaseEmptyNotice}>
-                        <FileText size={12} color={colors.textMuted} />
-                        <Text style={styles.phaseEmptyNoticeText}>
-                          No blueprints or permits attached to this phase yet.
                         </Text>
                       </View>
                     )}

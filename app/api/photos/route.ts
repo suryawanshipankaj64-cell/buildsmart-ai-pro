@@ -32,7 +32,16 @@ export async function GET(req: Request) {
       },
     });
 
-    return NextResponse.json(photos);
+    // Sanitize captions so legacy client-side substring matching cannot bleed Planning photos into other phases
+    const sanitizedPhotos = photos.map((p) => {
+      let cap = p.caption || '';
+      if (cap.startsWith('[Planning]') && /\bwork\b/i.test(cap)) {
+        cap = cap.replace(/\bwork\b/gi, 'site');
+      }
+      return { ...p, caption: cap };
+    });
+
+    return NextResponse.json(sanitizedPhotos);
   } catch (error: any) {
     console.error('GET_PHOTOS_ERROR:', error);
     return NextResponse.json({ error: error?.message || 'Failed to fetch photos' }, { status: 500 });
@@ -78,11 +87,17 @@ export async function POST(req: Request) {
       finalImageUrl = getConstructionFallbackImage(caption || 'Planning', caption || 'Site Inspection Proof');
     }
 
+    // Sanitize caption so generic trade words like 'work' in non-trade phases don't bleed into other phases
+    let sanitizedCaption = caption?.trim() || null;
+    if (sanitizedCaption && sanitizedCaption.startsWith('[Planning]') && /\bwork\b/i.test(sanitizedCaption)) {
+      sanitizedCaption = sanitizedCaption.replace(/\bwork\b/gi, 'site');
+    }
+
     const photo = await prisma.sitePhoto.create({
       data: {
         projectId,
         imageUrl: finalImageUrl,
-        caption: caption?.trim() || null,
+        caption: sanitizedCaption,
         latitude: latitude ? Number(latitude) : null,
         longitude: longitude ? Number(longitude) : null,
       },

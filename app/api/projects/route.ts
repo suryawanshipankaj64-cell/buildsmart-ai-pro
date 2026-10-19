@@ -34,7 +34,18 @@ export async function GET(req: Request) {
       },
     });
 
-    return NextResponse.json(projects);
+    const sanitizedProjects = projects.map((proj) => ({
+      ...proj,
+      sitePhotos: (proj.sitePhotos || []).map((p) => {
+        let cap = p.caption || '';
+        if (cap.startsWith('[Planning]') && /\bwork\b/i.test(cap)) {
+          cap = cap.replace(/\bwork\b/gi, 'site');
+        }
+        return { ...p, caption: cap };
+      }),
+    }));
+
+    return NextResponse.json(sanitizedProjects);
   } catch (error: any) {
     console.error('GET_PROJECTS_ERROR:', error);
     return NextResponse.json({ error: error?.message || 'Failed to fetch' }, { status: 500 });
